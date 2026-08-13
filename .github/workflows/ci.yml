@@ -1,0 +1,82 @@
+name: AI Future Pathway Navigator CI
+
+# The pipeline triggers on every push and pull request to the main branch.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # Mandatory ASP.NET Core Backend Pipeline
+  build-and-test-backend:
+    name: Backend (ASP.NET Core) CI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x' # Adjust to your specific .NET 8/7 version
+
+    - name: Restore dependencies
+      run: dotnet restore ./backend/PathwayNavigator.sln # Adjust path to your solution
+
+    - name: Build the backend
+      run: dotnet build ./backend/PathwayNavigator.sln --no-restore --configuration Release
+
+    - name: Run automated backend tests
+      run: dotnet test ./backend/PathwayNavigator.sln --no-build --configuration Release --verbosity normal
+
+  # Encouraged React Web Application Pipeline
+  build-and-test-web:
+    name: Frontend (React) CI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install Dependencies
+      working-directory: ./web
+      run: npm ci
+
+    - name: Lint and Check Formatting
+      working-directory: ./web
+      run: npm run lint
+
+    - name: Build React Application
+      working-directory: ./web
+      run: npm run build
+
+  # Encouraged Flutter Mobile Application Pipeline
+  analyze-and-build-mobile:
+    name: Mobile (Flutter) CI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.0' # Adjust to your specific Flutter version
+        channel: 'stable'
+
+    - name: Install Dependencies
+      working-directory: ./mobile
+      run: flutter pub get
+
+    - name: Run Flutter Analyze
+      working-directory: ./mobile
+      run: flutter analyze
+
+    - name: Run Flutter Tests
+      working-directory: ./mobile
+      run: flutter test
