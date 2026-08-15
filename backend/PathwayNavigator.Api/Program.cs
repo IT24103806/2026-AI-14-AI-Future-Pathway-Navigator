@@ -12,11 +12,23 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 2. Configure PostgreSQL Database[cite: 2]
+// Configure CORS for React SPA
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// 2. Configure PostgreSQL Database
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 3. SECURITY FIRST: Configure JWT Authentication[cite: 2]
+// 3. SECURITY FIRST: Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
 
@@ -39,13 +51,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add Authorization policies[cite: 2]
+// Add Authorization policies
 builder.Services.AddAuthorization();
 
 // Register Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
+
+// Enable CORS
+app.UseCors("AllowReactApp");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
