@@ -55,28 +55,4 @@ jobs:
       working-directory: ./web/PathwayNavigator
       run: npm run build
 
-  # Encouraged Flutter Mobile Application Pipeline
-  analyze-and-build-mobile:
-    name: Mobile (Flutter) CI
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.19.0' # Adjust to your specific Flutter version
-        channel: 'stable'
-
-    - name: Install Dependencies
-      working-directory: ./mobile
-      run: flutter pub get
-
-    - name: Run Flutter Analyze
-      working-directory: ./mobile
-      run: flutter analyze
-
-    - name: Run Flutter Tests
-      working-directory: ./mobile
-      run: flutter test
