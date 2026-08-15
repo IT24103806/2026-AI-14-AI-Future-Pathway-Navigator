@@ -1,0 +1,11 @@
+# ==========================================
+# 1. .NET / C# (Backend)
+# ==========================================
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+appsettings.Development.json
+appsettings.json
+
