@@ -44,15 +44,15 @@ jobs:
         node-version: '20'
 
     - name: Install Dependencies
-      working-directory: ./web
+      working-directory: ./web/PathwayNavigator
       run: npm ci
 
     - name: Lint and Check Formatting
-      working-directory: ./web
+      working-directory: ./web/PathwayNavigator
       run: npm run lint
 
     - name: Build React Application
-      working-directory: ./web
+      working-directory: ./web/PathwayNavigator
       run: npm run build
 
   # Encouraged Flutter Mobile Application Pipeline
