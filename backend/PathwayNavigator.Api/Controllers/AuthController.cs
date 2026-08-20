@@ -61,5 +61,94 @@ namespace PathwayNavigator.Api.Controllers
 
             return Ok(result);
         }
+
+        /// <summary>
+        /// Authenticates or registers a user via Google ID Token and returns an application JWT access token.
+        /// </summary>
+        [HttpPost("google")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.GoogleLoginAsync(request);
+            if (result == null)
+            {
+                return Unauthorized(new { message = "Invalid Google token or account is deactivated." });
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Initiates password reset by sending a 6-digit OTP verification code to the registered email.
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var (success, message) = await _authService.ForgotPasswordAsync(request);
+            if (!success)
+            {
+                return BadRequest(new { message });
+            }
+
+            return Ok(new { message });
+        }
+
+        /// <summary>
+        /// Pre-validates the 6-digit OTP verification code before entering a new password.
+        /// </summary>
+        [HttpPost("verify-reset-code")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyCodeRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var (success, message) = await _authService.VerifyResetCodeAsync(request);
+            if (!success)
+            {
+                return BadRequest(new { message });
+            }
+
+            return Ok(new { message });
+        }
+
+        /// <summary>
+        /// Resets the user's password using the 6-digit verification code.
+        /// </summary>
+        [HttpPost("reset-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var (success, message) = await _authService.ResetPasswordAsync(request);
+            if (!success)
+            {
+                return BadRequest(new { message });
+            }
+
+            return Ok(new { message });
+        }
     }
 }

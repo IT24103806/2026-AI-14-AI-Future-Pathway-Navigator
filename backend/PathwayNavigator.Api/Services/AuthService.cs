@@ -1,8 +1,11 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -16,11 +19,13 @@ namespace PathwayNavigator.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public AuthService(AppDbContext context, IConfiguration configuration)
+        public AuthService(AppDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         public async Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto request)
@@ -52,6 +57,7 @@ namespace PathwayNavigator.Api.Services
                 Id = Guid.NewGuid(),
                 Email = request.Email.ToLower().Trim(),
                 PasswordHash = passwordHash,
+                AuthProvider = "Local",
                 RoleId = role.Id,
                 Role = role,
                 IsActive = true,
@@ -73,7 +79,7 @@ namespace PathwayNavigator.Api.Services
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
 
-            if (user == null || !user.IsActive)
+            if (user == null || !user.IsActive || string.IsNullOrEmpty(user.PasswordHash))
             {
                 return null;
             }
@@ -87,6 +93,255 @@ namespace PathwayNavigator.Api.Services
 
             // 3. Generate Token
             return GenerateAuthResponse(user, user.Role?.Name ?? "Student");
+        }
+
+        public async Task<AuthResponseDto?> GoogleLoginAsync(GoogleLoginRequestDto request)
+        {
+            GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                var googleClientId = _configuration["Google:ClientId"];
+                var validationSettings = new GoogleJsonWebSignature.ValidationSettings();
+                if (!string.IsNullOrWhiteSpace(googleClientId))
+                {
+                    validationSettings.Audience = new[] { googleClientId };
+                }
+
+                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, validationSettings);
+            }
+            catch (Exception)
+            {
+                return null; // Signature verification failed or token expired
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.Email))
+            {
+                return null;
+            }
+
+            var normalizedEmail = payload.Email.ToLower().Trim();
+
+            // 1. Check if user already exists
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+
+            if (user != null)
+            {
+                if (!user.IsActive)
+                {
+                    return null; // Inactive or deactivated user
+                }
+
+                // Update OAuth profile details if not set
+                bool updated = false;
+                if (string.IsNullOrEmpty(user.GoogleId))
+                {
+                    user.GoogleId = payload.Subject;
+                    updated = true;
+                }
+                if (string.IsNullOrEmpty(user.FullName) && !string.IsNullOrEmpty(payload.Name))
+                {
+                    user.FullName = payload.Name;
+                    updated = true;
+                }
+                if (string.IsNullOrEmpty(user.ProfilePictureUrl) && !string.IsNullOrEmpty(payload.Picture))
+                {
+                    user.ProfilePictureUrl = payload.Picture;
+                    updated = true;
+                }
+                if (string.IsNullOrEmpty(user.AuthProvider))
+                {
+                    user.AuthProvider = "Google";
+                    updated = true;
+                }
+
+                if (updated)
+                {
+                    user.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                return GenerateAuthResponse(user, user.Role?.Name ?? "Student");
+            }
+
+            // 2. Auto-provision new user with default "Student" role
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+            if (role == null)
+            {
+                throw new InvalidOperationException("Default 'Student' role is missing from database.");
+            }
+
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = normalizedEmail,
+                PasswordHash = null,
+                RoleId = role.Id,
+                Role = role,
+                GoogleId = payload.Subject,
+                AuthProvider = "Google",
+                FullName = payload.Name,
+                ProfilePictureUrl = payload.Picture,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return GenerateAuthResponse(user, role.Name);
+        }
+
+        public async Task<(bool Success, string Message)> ForgotPasswordAsync(ForgotPasswordRequestDto request)
+        {
+            var normalizedEmail = request.Email.ToLower().Trim();
+
+            // 1. Check if user exists
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+            if (user == null || !user.IsActive)
+            {
+                // Return success message to prevent user enumeration
+                return (true, "If an active account with this email exists, a 6-digit verification code has been sent.");
+            }
+
+            // 2. Reject Google-only accounts that don't have local password support
+            if (user.AuthProvider == "Google" && string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return (false, "This account was registered using Google Sign-In. Password reset is not available for Google OAuth accounts.");
+            }
+
+            // 3. Invalidate prior active verification codes for this purpose
+            var activeCodes = await _context.VerificationCodes
+                .Where(v => v.Email == normalizedEmail && v.Purpose == "PasswordReset" && !v.IsUsed)
+                .ToListAsync();
+
+            foreach (var activeCode in activeCodes)
+            {
+                activeCode.IsUsed = true;
+            }
+
+            // 4. Generate cryptographically random 6-digit numeric OTP (100000 - 999999)
+            var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+
+            // 5. Store verification code with 15-minute expiration
+            var verificationCode = new VerificationCode
+            {
+                Id = Guid.NewGuid(),
+                Email = normalizedEmail,
+                Code = otp,
+                Purpose = "PasswordReset",
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                IsUsed = false,
+                UserId = user.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.VerificationCodes.Add(verificationCode);
+            await _context.SaveChangesAsync();
+
+            // 6. Send verification code via email service
+            await _emailService.SendPasswordResetCodeAsync(user.Email, otp);
+
+            return (true, "A 6-digit verification code has been sent to your email address.");
+        }
+
+        public async Task<(bool Success, string Message)> VerifyResetCodeAsync(VerifyCodeRequestDto request)
+        {
+            var normalizedEmail = request.Email.ToLower().Trim();
+            var inputCode = request.Code.Trim();
+
+            var record = await _context.VerificationCodes
+                .Where(v => v.Email == normalizedEmail && v.Purpose == "PasswordReset" && !v.IsUsed)
+                .OrderByDescending(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (record == null)
+            {
+                return (false, "No active password reset verification code found for this email.");
+            }
+
+            if (record.ExpiresAt < DateTime.UtcNow)
+            {
+                return (false, "The verification code has expired. Please request a new one.");
+            }
+
+            if (record.AttemptCount >= 5)
+            {
+                return (false, "Too many failed attempts. Please request a new verification code.");
+            }
+
+            if (record.Code != inputCode)
+            {
+                record.AttemptCount++;
+                await _context.SaveChangesAsync();
+                return (false, "Invalid verification code.");
+            }
+
+            return (true, "Verification code is valid.");
+        }
+
+        public async Task<(bool Success, string Message)> ResetPasswordAsync(ResetPasswordRequestDto request)
+        {
+            var normalizedEmail = request.Email.ToLower().Trim();
+            var inputCode = request.Code.Trim();
+
+            if (request.NewPassword != request.ConfirmPassword)
+            {
+                return (false, "New password and confirmation password do not match.");
+            }
+
+            // 1. Verify verification code
+            var record = await _context.VerificationCodes
+                .Where(v => v.Email == normalizedEmail && v.Purpose == "PasswordReset" && !v.IsUsed)
+                .OrderByDescending(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (record == null)
+            {
+                return (false, "No active password reset verification code found.");
+            }
+
+            if (record.ExpiresAt < DateTime.UtcNow)
+            {
+                return (false, "The verification code has expired. Please request a new one.");
+            }
+
+            if (record.AttemptCount >= 5)
+            {
+                return (false, "Too many failed attempts. Please request a new verification code.");
+            }
+
+            if (record.Code != inputCode)
+            {
+                record.AttemptCount++;
+                await _context.SaveChangesAsync();
+                return (false, "Invalid verification code.");
+            }
+
+            // 2. Fetch user
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+            if (user == null || !user.IsActive)
+            {
+                return (false, "User account not found or inactive.");
+            }
+
+            if (user.AuthProvider == "Google" && string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return (false, "This account was registered using Google Sign-In and cannot have its password reset.");
+            }
+
+            // 3. Mark code as used
+            record.IsUsed = true;
+
+            // 4. Update user password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return (true, "Password has been reset successfully. You can now log in with your new password.");
         }
 
         private AuthResponseDto GenerateAuthResponse(User user, string roleName)

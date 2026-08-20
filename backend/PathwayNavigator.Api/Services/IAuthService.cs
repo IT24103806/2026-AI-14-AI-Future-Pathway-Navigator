@@ -7,5 +7,9 @@ namespace PathwayNavigator.Api.Services
     {
         Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto request);
         Task<AuthResponseDto?> LoginAsync(LoginRequestDto request);
+        Task<AuthResponseDto?> GoogleLoginAsync(GoogleLoginRequestDto request);
+        Task<(bool Success, string Message)> ForgotPasswordAsync(ForgotPasswordRequestDto request);
+        Task<(bool Success, string Message)> VerifyResetCodeAsync(VerifyCodeRequestDto request);
+        Task<(bool Success, string Message)> ResetPasswordAsync(ResetPasswordRequestDto request);
     }
 }

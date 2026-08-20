@@ -12,4 +12,8 @@ export const STORAGE_KEYS = {
 export const API_ROUTES = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
+  GOOGLE: '/auth/google',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  VERIFY_RESET_CODE: '/auth/verify-reset-code',
+  RESET_PASSWORD: '/auth/reset-password',
 };

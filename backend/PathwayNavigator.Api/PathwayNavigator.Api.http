@@ -1,6 +1,58 @@
 @PathwayNavigator.Api_HostAddress = http://localhost:5081
 
-GET {{PathwayNavigator.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "email": "testuser@example.com",
+  "password": "Password123!",
+  "roleName": "Student"
+}
+
+### Login
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "Password123!"
+}
+
+### Google Login
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/google
+Content-Type: application/json
+
+{
+  "idToken": "<PASTE_GOOGLE_ID_TOKEN_HERE>"
+}
+
+### Forgot Password (Request 6-digit OTP)
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com"
+}
+
+### Verify Reset Code
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/verify-reset-code
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "code": "123456"
+}
+
+### Reset Password
+POST {{PathwayNavigator.Api_HostAddress}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "code": "123456",
+  "newPassword": "NewSecurePassword123!",
+  "confirmPassword": "NewSecurePassword123!"
+}
+
+

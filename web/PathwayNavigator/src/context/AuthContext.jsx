@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { loginApi, registerApi } from '../api/authApi';
+import { loginApi, registerApi, googleLoginApi } from '../api/authApi';
 import { STORAGE_KEYS } from '../config/constants';
 import { isTokenExpired } from '../utils/tokenUtils';
 
@@ -63,6 +63,12 @@ export const AuthProvider = ({ children }) => {
     return authData;
   };
 
+  const googleLogin = async (idToken) => {
+    const authData = await googleLoginApi(idToken);
+    saveAuthSession(authData);
+    return authData;
+  };
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -77,6 +83,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     register,
+    googleLogin,
     logout,
   };
 

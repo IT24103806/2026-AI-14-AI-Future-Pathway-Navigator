@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import FormInput from '../components/common/FormInput';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
+import GoogleSignInButton from '../components/common/GoogleSignInButton';
 import { ROLES } from '../config/constants';
 
 const RegisterPage = () => {
@@ -18,7 +19,7 @@ const RegisterPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -77,6 +78,24 @@ const RegisterPage = () => {
     }
   };
 
+  const handleGoogleSuccess = async (idToken) => {
+    setIsSubmitting(true);
+    setApiError('');
+
+    try {
+      await googleLogin(idToken);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setApiError(err.message || 'Google registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleError = (error) => {
+    setApiError(error.message || 'Google Sign-Up was cancelled or failed.');
+  };
+
   return (
     <div className="auth-page-container">
       <div className="auth-card">
@@ -91,6 +110,20 @@ const RegisterPage = () => {
           message={apiError}
           onClose={() => setApiError('')}
         />
+
+        {/* Google Authentication */}
+        <div className="google-auth-section">
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            disabled={isSubmitting}
+            text="signup_with"
+          />
+        </div>
+
+        <div className="auth-divider">
+          <span>or register with email</span>
+        </div>
 
         <form onSubmit={handleSubmit} noValidate className="auth-form">
           <FormInput

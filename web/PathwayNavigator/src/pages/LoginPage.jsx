@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import FormInput from '../components/common/FormInput';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
+import GoogleSignInButton from '../components/common/GoogleSignInButton';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -12,7 +13,7 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,7 +22,6 @@ const LoginPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field-level error on edit
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -64,6 +64,24 @@ const LoginPage = () => {
     }
   };
 
+  const handleGoogleSuccess = async (idToken) => {
+    setIsSubmitting(true);
+    setApiError('');
+
+    try {
+      await googleLogin(idToken);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setApiError(err.message || 'Google authentication failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleError = (error) => {
+    setApiError(error.message || 'Google Sign-In was cancelled or failed.');
+  };
+
   return (
     <div className="auth-page-container">
       <div className="auth-card">
@@ -79,6 +97,20 @@ const LoginPage = () => {
           onClose={() => setApiError('')}
         />
 
+        {/* Google Authentication */}
+        <div className="google-auth-section">
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            disabled={isSubmitting}
+            text="signin_with"
+          />
+        </div>
+
+        <div className="auth-divider">
+          <span>or sign in with email</span>
+        </div>
+
         <form onSubmit={handleSubmit} noValidate className="auth-form">
           <FormInput
             id="login-email"
@@ -93,27 +125,34 @@ const LoginPage = () => {
             autoComplete="email"
           />
 
-          <FormInput
-            id="login-password"
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-            error={errors.password}
-            required
-            autoComplete="current-password"
-          >
-            <button
-              type="button"
-              className="password-toggle-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+          <div className="form-group-with-link">
+            <FormInput
+              id="login-password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              error={errors.password}
+              required
+              autoComplete="current-password"
             >
-              {showPassword ? '👁️' : '🙈'}
-            </button>
-          </FormInput>
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '👁️' : '🙈'}
+              </button>
+            </FormInput>
+            <div className="forgot-password-wrapper">
+              <Link to="/forgot-password" className="forgot-password-link">
+                Forgot password?
+              </Link>
+            </div>
+          </div>
 
           <PrimaryButton
             type="submit"
@@ -139,3 +178,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
