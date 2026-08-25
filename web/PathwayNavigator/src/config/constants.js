@@ -16,4 +16,8 @@ export const API_ROUTES = {
   FORGOT_PASSWORD: '/auth/forgot-password',
   VERIFY_RESET_CODE: '/auth/verify-reset-code',
   RESET_PASSWORD: '/auth/reset-password',
+  ONBOARDING_CHAT: '/onboarding/chat',
+  ONBOARDING_STANDARD: '/onboarding/standard-form',
+  PROFILE_STATUS: '/profile/status',
+  PROFILE: '/profile',
 };

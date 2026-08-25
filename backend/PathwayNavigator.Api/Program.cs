@@ -55,6 +55,14 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Register Application Services
+builder.Services.AddHttpClient<IAgentService, AgentService>(client =>
+{
+    var baseUrl = builder.Configuration["AiServiceSettings:BaseUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
+builder.Services.AddScoped<IStudentProfileService, StudentProfileService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 

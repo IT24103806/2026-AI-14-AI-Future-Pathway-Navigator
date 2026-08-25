@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/tokenUtils';
+import { getStudentProfileApi } from '../api/profileApi';
 
 const DashboardPage = () => {
   const { user, token, logout } = useAuth();
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getStudentProfileApi();
+        setProfile(data);
+      } catch (err) {
+        console.warn('Profile not yet created or error fetching:', err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -11,18 +27,62 @@ const DashboardPage = () => {
         <div className="dashboard-welcome">
           <span className="welcome-avatar">👤</span>
           <div>
-            <h1>Welcome, {user?.email}</h1>
+            <h1>Welcome, {profile?.fullName || user?.email}</h1>
             <p className="dashboard-subtitle">
-              Your PathwayNavigator session is active.
+              {profile?.academicStage ? `${profile.academicStage} • ` : ''}Your PathwayNavigator session is active.
             </p>
           </div>
         </div>
         <div className="dashboard-actions">
+          <Link to="/onboarding" className="btn btn-outline-primary" style={{ marginRight: '0.75rem' }}>
+            🤖 Re-run AI Onboarding
+          </Link>
           <button onClick={logout} className="btn btn-outline-danger">
             Sign Out
           </button>
         </div>
       </div>
+
+      {/* Student Profile Overview Card */}
+      {profile && (
+        <div className="dash-card student-profile-hero-card" style={{ marginBottom: '2rem' }}>
+          <div className="profile-hero-header">
+            <div>
+              <span className="badge-agent">🤖 Verified by Agent 1 ({profile.onboardingMethod})</span>
+              <h2 style={{ marginTop: '0.5rem' }}>Target Career: {profile.careerAmbitions}</h2>
+            </div>
+            <span className="stage-badge-large">{profile.academicStage}</span>
+          </div>
+
+          <div className="profile-details-grid">
+            <div className="profile-section-box">
+              <h4>💡 Core Skills</h4>
+              <div className="slot-tags-container">
+                {profile.coreSkills?.length > 0 ? (
+                  profile.coreSkills.map((skill, idx) => (
+                    <span key={idx} className="slot-pill">{skill}</span>
+                  ))
+                ) : (
+                  <span className="text-dim">No skills added</span>
+                )}
+              </div>
+            </div>
+
+            <div className="profile-section-box">
+              <h4>🎨 Hobbies & Interests</h4>
+              <div className="slot-tags-container">
+                {profile.hobbiesInterests?.length > 0 ? (
+                  profile.hobbiesInterests.map((hobby, idx) => (
+                    <span key={idx} className="slot-pill hobby-pill">{hobby}</span>
+                  ))
+                ) : (
+                  <span className="text-dim">No interests added</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-grid">
         <div className="dash-card profile-summary-card">
@@ -53,7 +113,7 @@ const DashboardPage = () => {
           <div className="feature-icon">🤖</div>
           <h3>AI Pathway Recommender</h3>
           <p>
-            Explore customized AI career paths and skill trees tailored for your profile.
+            Explore customized AI career paths and skill trees tailored for your {profile?.academicStage || 'academic'} profile.
           </p>
           <button className="btn btn-sm btn-primary mt-2">Explore Pathways</button>
         </div>
@@ -62,7 +122,7 @@ const DashboardPage = () => {
           <div className="feature-icon">📚</div>
           <h3>Learning Modules</h3>
           <p>
-            Access interactive modules, quizzes, and project milestones assigned to your role.
+            Access interactive modules, quizzes, and project milestones aligned with {profile?.careerAmbitions || 'your ambitions'}.
           </p>
           <button className="btn btn-sm btn-secondary mt-2">View Modules</button>
         </div>
@@ -84,3 +144,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+

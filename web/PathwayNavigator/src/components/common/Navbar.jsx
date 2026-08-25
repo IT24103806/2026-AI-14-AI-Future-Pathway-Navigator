@@ -22,6 +22,9 @@ const Navbar = () => {
         <nav className="navbar-links">
           {isAuthenticated ? (
             <div className="nav-user-section">
+              <Link to="/onboarding" className="nav-link">
+                🤖 AI Onboarding
+              </Link>
               <Link to="/dashboard" className="nav-link">
                 Dashboard
               </Link>

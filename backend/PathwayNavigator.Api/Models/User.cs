@@ -19,6 +19,9 @@ namespace PathwayNavigator.Api.Models
         public Guid RoleId { get; set; }
         public Role? Role { get; set; }
 
+        // Navigation property for Student Profile
+        public StudentProfile? StudentProfile { get; set; }
+
         // Audit Fields[cite: 2]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
