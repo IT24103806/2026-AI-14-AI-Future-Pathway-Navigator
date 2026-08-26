@@ -11,6 +11,7 @@ namespace PathwayNavigator.Api.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<VerificationCode> VerificationCodes { get; set; }
         public DbSet<StudentProfile> StudentProfiles { get; set; }
+        public DbSet<PathwayAnalysis> PathwayAnalyses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,20 @@ namespace PathwayNavigator.Api.Data
             // Index for efficient verification code queries
             modelBuilder.Entity<VerificationCode>()
                 .HasIndex(v => new { v.Email, v.Purpose, v.IsUsed });
+
+            // A student profile can have many pathway analyses over time.
+            modelBuilder.Entity<PathwayAnalysis>()
+                .HasOne(a => a.StudentProfile)
+                .WithMany()
+                .HasForeignKey(a => a.StudentProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Approver reference is optional and independent of the profile's lifecycle.
+            modelBuilder.Entity<PathwayAnalysis>()
+                .HasOne(a => a.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
