@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PathwayNavigator.Api.DTOs.Onboarding;
+using PathwayNavigator.Api.DTOs.Pathway;
+using PathwayNavigator.Api.DTOs.Profile;
 
 namespace PathwayNavigator.Api.Services
 {
@@ -61,6 +63,45 @@ namespace PathwayNavigator.Api.Services
 
             // Fallback response if AI service is temporarily offline during development
             return GenerateFallbackTurn(request);
+        }
+
+        public async Task<PathwayAnalysisResponseDto?> ProcessAgent2AnalysisAsync(StudentProfileDto profile, string? userId = null)
+        {
+            try
+            {
+                var payload = new
+                {
+                    user_id = userId,
+                    profile = new
+                    {
+                        academic_stage = profile.AcademicStage,
+                        core_skills = profile.CoreSkills,
+                        hobbies_interests = profile.HobbiesInterests,
+                        career_ambitions = profile.CareerAmbitions
+                    }
+                };
+
+                var response = await _httpClient.PostAsJsonAsync("/api/v1/agent-2/analyze", payload);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<PathwayAnalysisResponseDto>(new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    return result;
+                }
+
+                var errorText = await response.Content.ReadAsStringAsync();
+                _logger.LogError("AI Microservice (Agent 2) returned error status {StatusCode}: {ErrorText}", response.StatusCode, errorText);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to communicate with AI microservice (Agent 2) at {BaseAddress}", _httpClient.BaseAddress);
+            }
+
+            // No fabricated fallback here — career recommendations must come from the real agent.
+            return null;
         }
 
         private AgentChatResponseDto GenerateFallbackTurn(AgentChatRequestDto request)

@@ -63,6 +63,7 @@ builder.Services.AddHttpClient<IAgentService, AgentService>(client =>
 });
 
 builder.Services.AddScoped<IStudentProfileService, StudentProfileService>();
+builder.Services.AddScoped<IPathwayAnalysisService, PathwayAnalysisService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
