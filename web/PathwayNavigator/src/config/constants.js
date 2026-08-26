@@ -20,4 +20,6 @@ export const API_ROUTES = {
   ONBOARDING_STANDARD: '/onboarding/standard-form',
   PROFILE_STATUS: '/profile/status',
   PROFILE: '/profile',
+  CAREER_DISCOVERY_BASE: '/career-discovery',
+  CAREER_DISCOVERY_ANALYZE: '/career-discovery/analyze',
 };

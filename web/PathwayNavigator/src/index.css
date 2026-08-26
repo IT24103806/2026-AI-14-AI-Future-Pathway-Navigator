@@ -1544,4 +1544,584 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.text-dim {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
 
+/* ============ Career Discovery (Agent 2) ============ */
+.career-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  width: 100%;
+}
+
+.hero-cta-btn {
+  margin-top: 0.5rem;
+  padding: 0.9rem 2rem;
+  font-size: 1rem;
+  box-shadow: var(--shadow-glow);
+}
+
+.career-onboarding-nudge {
+  display: flex;
+  justify-content: center;
+  margin: -0.5rem 0 1.5rem;
+}
+
+/* Loading state */
+.career-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 4rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.4s ease both;
+}
+
+.career-loading-state .large-spinner {
+  animation: spin 0.8s linear infinite, pulseGlow 1.8s ease-in-out infinite;
+}
+
+.career-loading-state h3 {
+  margin-top: 0.5rem;
+}
+
+/* How it works */
+.how-it-works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.how-it-works-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  transition: var(--transition);
+  animation: cardFadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.how-it-works-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+}
+
+.how-it-works-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.how-it-works-card h4 {
+  margin-bottom: 0.5rem;
+}
+
+.how-it-works-card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Results */
+.career-results-section {
+  margin-top: 2rem;
+  animation: fadeIn 0.5s ease both;
+}
+
+.career-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.workflow-id-tag {
+  color: var(--text-dim);
+}
+
+.pathway-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+/* Pathway Card */
+.pathway-card {
+  /* Locally re-themed to a light card — overrides the dark tokens for
+     everything inside via var() cascade, so the rest of the app stays dark. */
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --border-color: #e5e9f0;
+  --primary-light: rgba(59, 130, 246, 0.08);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #ffffff;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: 0 16px 32px -14px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  animation: cardFadeInUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pathway-card:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-6px);
+  box-shadow: 0 24px 44px -16px rgba(15, 23, 42, 0.25), 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.pathway-card-top {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.pathway-card-top:hover {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25), 0 24px 44px -16px rgba(15, 23, 42, 0.25);
+}
+
+.pathway-card-ribbon {
+  position: absolute;
+  top: -0.65rem;
+  left: 1.5rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.pathway-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pathway-label-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #1d4ed8;
+  background: var(--primary-light);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  margin-bottom: 0.5rem;
+}
+
+.pathway-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Score Ring */
+.score-ring-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.score-ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.score-ring-track {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.08);
+  stroke-width: 7;
+}
+
+.score-ring-progress {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s ease;
+}
+
+.score-ring-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.score-ring-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.score-ring-percent {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.score-ring-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Market Meters */
+.pathway-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.market-meter-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.market-meter-value {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.market-meter-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.market-meter-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.6s ease;
+}
+
+.market-meter-demand {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.market-meter-competition {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+/* Data source badge */
+.data-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+}
+
+.data-source-live {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.data-source-simulated {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.pathway-reasoning {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.pathway-courses h4 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.course-pill {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #6d28d9;
+}
+
+/* Decision Panel (Approve / Reject the whole analysis) */
+.decision-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(12px);
+}
+
+.decision-prompt {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.decision-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.decision-btn-approve {
+  background: var(--success);
+  color: white;
+}
+
+.decision-btn-approve:hover:not(:disabled) {
+  background: #059669;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.decision-btn-reject {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.decision-btn-reject:hover:not(:disabled) {
+  background: var(--danger-bg);
+}
+
+.decision-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+}
+
+.decision-approved {
+  background: var(--success-bg);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.decision-rejected {
+  background: var(--danger-bg);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* Trend Badge */
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  margin-top: 0.1rem;
+}
+
+.trend-rising {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.trend-stable {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.trend-declining {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.trend-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+/* Missing Skills Panel */
+.missing-skills-panel h4 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.missing-skills-empty p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.skill-gap-pill {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #92400e;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: fadeIn 0.4s ease both;
+}
+
+/* Roadmap Timeline */
+.roadmap-timeline h4 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.roadmap-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.roadmap-step {
+  display: flex;
+  gap: 0.85rem;
+  animation: fadeInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.roadmap-step-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.roadmap-step-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.roadmap-step-line {
+  width: 2px;
+  flex: 1;
+  min-height: 22px;
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.05));
+  margin: 0.15rem 0;
+}
+
+.roadmap-step-content {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1.1rem;
+}
+
+.roadmap-step-phase {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #1d4ed8;
+}
+
+.roadmap-step-course {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+/* ============ Animation Keyframes ============ */
+@keyframes cardFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  50% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pathway-card,
+  .how-it-works-card,
+  .career-results-section,
+  .career-loading-state,
+  .skill-gap-pill,
+  .roadmap-step,
+  .trend-pulse-dot,
+  .career-loading-state .large-spinner {
+    animation: none !important;
+    transition: none !important;
+  }
+}

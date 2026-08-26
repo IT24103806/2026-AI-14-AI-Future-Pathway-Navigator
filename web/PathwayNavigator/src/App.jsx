@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import OnboardingPage from './pages/OnboardingPage';
 import DashboardPage from './pages/DashboardPage';
+import CareerDiscoveryPage from './pages/CareerDiscoveryPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
 import './App.css';
@@ -38,6 +39,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/career-discovery"
+                element={
+                  <ProtectedRoute>
+                    <CareerDiscoveryPage />
                   </ProtectedRoute>
                 }
               />

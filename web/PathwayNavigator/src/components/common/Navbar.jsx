@@ -25,6 +25,9 @@ const Navbar = () => {
               <Link to="/onboarding" className="nav-link">
                 🤖 AI Onboarding
               </Link>
+              <Link to="/career-discovery" className="nav-link">
+                🧭 Career Discovery
+              </Link>
               <Link to="/dashboard" className="nav-link">
                 Dashboard
               </Link>
