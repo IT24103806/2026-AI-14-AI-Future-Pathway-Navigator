@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from agent_1_conversation.router import router as agent_1_router
+from agent_2_pathway_analysis.router import router as agent_2_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -21,6 +22,9 @@ app.add_middleware(
 
 # Include Agent 1 Router
 app.include_router(agent_1_router, prefix=settings.API_V1_STR)
+
+# Include Agent 2 Router
+app.include_router(agent_2_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
