@@ -115,7 +115,7 @@ const DashboardPage = () => {
           <p>
             Explore customized AI career paths and skill trees tailored for your {profile?.academicStage || 'academic'} profile.
           </p>
-          <button className="btn btn-sm btn-primary mt-2">Explore Pathways</button>
+          <Link to="/career-discovery" className="btn btn-sm btn-primary mt-2">Explore Pathways</Link>
         </div>
 
         <div className="dash-card feature-card">
