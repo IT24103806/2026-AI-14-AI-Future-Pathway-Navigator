@@ -13,6 +13,8 @@ namespace PathwayNavigator.Api.Data
         public DbSet<StudentProfile> StudentProfiles { get; set; }
         public DbSet<PathwayAnalysis> PathwayAnalyses { get; set; }
 
+        public DbSet<PathwayReview> PathwayReviews { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
