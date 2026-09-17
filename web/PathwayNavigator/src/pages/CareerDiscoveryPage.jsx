@@ -11,6 +11,7 @@ const HOW_IT_WORKS = [
   { icon: '🤖', title: 'AI Reasoning', text: 'Explains each match in plain language, then validates every result before showing it to you.' },
 ];
 
+
 const DECISION_CONFIG = {
   approved: { icon: '✅', label: 'Approved', className: 'decision-approved' },
   rejected: { icon: '❌', label: 'Rejected', className: 'decision-rejected' },

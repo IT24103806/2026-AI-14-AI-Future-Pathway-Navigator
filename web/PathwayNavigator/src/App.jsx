@@ -34,6 +34,7 @@ function App() {
                   <ProtectedRoute>
                     <OnboardingPage />
                   </ProtectedRoute>
+                  
                 }
               />
               <Route
