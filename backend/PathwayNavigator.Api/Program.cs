@@ -26,11 +26,15 @@ builder.Services.AddCors(options =>
 
 // 2. Configure PostgreSQL Database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Host=localhost;Port=5432;Database=PathwayNavigatorDb;Username=postgres;Password=postgres"));
 
 // 3. SECURITY FIRST: Configure JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secret = jwtSettings["Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+var secretKey = Encoding.UTF8.GetBytes(secret);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -66,6 +70,8 @@ builder.Services.AddScoped<IStudentProfileService, StudentProfileService>();
 builder.Services.AddScoped<IPathwayAnalysisService, PathwayAnalysisService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+// Register Member 4 Review Service
+builder.Services.AddScoped<ICounsellorReviewService, CounsellorReviewService>();
 
 var app = builder.Build();
 

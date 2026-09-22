@@ -34,6 +34,7 @@ class _CareerDiscoveryScreenState extends State<CareerDiscoveryScreen> {
 
   Map<String, dynamic>? _result;
   bool _isAnalyzing = false;
+  
   bool _isDeciding = false;
   String? _errorMessage;
 
