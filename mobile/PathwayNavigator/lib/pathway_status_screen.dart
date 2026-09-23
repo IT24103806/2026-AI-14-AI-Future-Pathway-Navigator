@@ -9,158 +9,234 @@ class PathwayStatusScreen extends StatefulWidget {
 }
 
 class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
-  // Demo State (Backend API endpoint: /api/CounsellorReview/student/{id}/status)
-  bool _isLoading = false;
-  String _status = "Pending"; // Pending, Approved, NeedsRevision
-  int _feasibilityScore = 78;
-  List<String> _missingSkills = ["Python", "OOP Concepts", "Databases"];
-  String _counsellorNote = "Please complete a foundational Python certificate before degree commencement.";
-  DateTime? _selectedConsultationDate;
+  final String _status = "Pending";
+  final int _feasibilityScore = 75;
+  final List<String> _missingSkills = const [
+    "Python Foundations",
+    "Data Structures",
+    "SQL Databases"
+  ];
+  final String _riskReason =
+      "Prerequisite gap: Computing transition requires accredited introductory coursework.";
+  final String _counsellorNote =
+      "Pathway conditionally flagged. Book a 1-on-1 session or complete remedial courses.";
+  DateTime? _bookedDate;
 
-  // Device Feature: Date Picker for booking counsellor review session
-  Future<void> _pickConsultationDate() async {
+  // Native Device Feature: Consultation Date Picker
+  Future<void> _selectConsultationDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 60)),
     );
-    if (picked != null) {
-      setState(() {
-        _selectedConsultationDate = picked;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Consultation booked for: ${picked.toLocal().toString().split(' ')[0]}')),
-      );
-    }
+
+    if (!mounted || picked == null) return;
+
+    setState(() {
+      _bookedDate = picked;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            'Session booked for: ${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}'),
+        backgroundColor: Colors.teal,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Color _getStatusColor() {
     switch (_status) {
       case "Approved":
-        return Colors.green;
+        return const Color(0xFF16A34A);
       case "NeedsRevision":
-        return Colors.orange;
+        return const Color(0xFFD97706);
       default:
-        return Colors.blue;
+        return const Color(0xFF2563EB);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _getStatusColor();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pathway Feasibility & Status'),
+        title: const Text('Feasibility & Approval'),
         backgroundColor: const Color(0xFF0F172A),
+        foregroundColor: Colors.white,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Header Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
                 children: [
-                  // Status Badge Card
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.verified_user_outlined, size: 40, color: _getStatusColor()),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Approval Status', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                              Text(
-                                _status,
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _getStatusColor()),
-                              ),
-                            ],
-                          ),
-                        ],
+                  Icon(Icons.assignment_turned_in_outlined,
+                      color: statusColor, size: 36),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Review Status',
+                          style:
+                              TextStyle(color: Colors.black54, fontSize: 13)),
+                      Text(
+                        _status,
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Feasibility Score Card
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('AI Reality Check Score', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 12),
-                          LinearProgressIndicator(
-                            value: _feasibilityScore / 100,
-                            minHeight: 10,
-                            backgroundColor: Colors.grey[200],
-                            color: _feasibilityScore > 70 ? Colors.teal : Colors.amber,
-                          ),
-                          const SizedBox(height: 8),
-                          Text('$_feasibilityScore% Feasibility Match', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Missing Skills Section
-                  const Text('Identified Skill Gaps', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8.0,
-                    runSpacing: 4.0,
-                    children: _missingSkills
-                        .map((skill) => Chip(
-                              avatar: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.deepOrange),
-                              label: Text(skill),
-                              backgroundColor: Colors.orange.shade50,
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Counsellor Feedback Card
-                  if (_counsellorNote.isNotEmpty) ...[
-                    Card(
-                      color: const Color(0xFFF8FAFC),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Counsellor Remarks:', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                            const SizedBox(height: 4),
-                            Text(_counsellorNote, style: const TextStyle(color: Color(0xFF475569))),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Device Feature: Book Review Session
-                  OutlinedButton.icon(
-                    onPressed: _pickConsultationDate,
-                    icon: const Icon(Icons.calendar_month),
-                    label: Text(_selectedConsultationDate == null
-                        ? 'Book Counsellor 1-on-1 Session'
-                        : 'Session: ${_selectedConsultationDate.toString().split(' ')[0]}'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                    ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+
+            // AI Feasibility Score Progress
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Agent 4 Reality Match',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('$_feasibilityScore%',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2563EB))),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: _feasibilityScore / 100,
+                        minHeight: 10,
+                        backgroundColor: Colors.grey.shade200,
+                        color: _feasibilityScore > 70
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Risk Assessment Flag Card
+            if (_riskReason.isNotEmpty) ...[
+              Card(
+                color: const Color(0xFFFFF1F2),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Color(0xFFBE123C)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Flagged Entry Risk:',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF9F1239))),
+                            const SizedBox(height: 4),
+                            Text(_riskReason,
+                                style: const TextStyle(
+                                    color: Color(0xFFBE123C), fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Missing Prerequisites
+            const Text('Identified Skill Gaps',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _missingSkills
+                  .map((skill) => Chip(
+                        label: Text(skill,
+                            style: const TextStyle(fontSize: 12)),
+                        avatar: const Icon(Icons.school_outlined, size: 16),
+                        backgroundColor: const Color(0xFFEFF6FF),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 20),
+
+            // Counsellor Remarks
+            Card(
+              color: const Color(0xFFF8FAFC),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Counsellor Feedback / Instruction:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Text(_counsellorNote,
+                        style: const TextStyle(
+                            color: Color(0xFF475569), fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Device Feature: Date Picker Button for 1-on-1 Consultation
+            FilledButton.icon(
+              onPressed: _selectConsultationDate,
+              icon: const Icon(Icons.calendar_today_outlined),
+              label: Text(_bookedDate == null
+                  ? 'Book Counsellor 1-on-1 Session'
+                  : 'Session Date: ${_bookedDate!.year}-${_bookedDate!.month.toString().padLeft(2, '0')}-${_bookedDate!.day.toString().padLeft(2, '0')}'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: const Color(0xFF2563EB),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
