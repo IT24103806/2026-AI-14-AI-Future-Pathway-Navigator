@@ -4,6 +4,7 @@ namespace PathwayNavigator.Api.Services;
 
 public interface ICounsellorReviewService
 {
+    Task<IReadOnlyList<PathwayReviewResponseDto>> GetPendingReviewsAsync();
     Task<PagedReviewsDto> GetReviewsAsync(string status, string? search, string sort, int page, int pageSize);
     Task<PathwayReviewResponseDto?> GetReviewByIdAsync(Guid id);
     Task<PathwayReviewResponseDto?> GetReviewByIdForStudentAsync(Guid id, Guid studentId);

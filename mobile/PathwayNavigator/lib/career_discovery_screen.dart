@@ -354,7 +354,7 @@ class _CareerDiscoveryScreenState extends State<CareerDiscoveryScreen> {
                 ),
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: _scoreColor(matchScore).withOpacity(0.15),
+                  backgroundColor: _scoreColor(matchScore).withValues(alpha: 0.15),
                   child: Text(
                     '$matchScore%',
                     style: TextStyle(color: _scoreColor(matchScore), fontWeight: FontWeight.bold),
@@ -420,7 +420,7 @@ class _CareerDiscoveryScreenState extends State<CareerDiscoveryScreen> {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16)),
       child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
@@ -444,7 +444,7 @@ class _CareerDiscoveryScreenState extends State<CareerDiscoveryScreen> {
             child: LinearProgressIndicator(
               value: value / 100,
               minHeight: 6,
-              backgroundColor: color.withOpacity(0.15),
+              backgroundColor: color.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -456,7 +456,7 @@ class _CareerDiscoveryScreenState extends State<CareerDiscoveryScreen> {
   Widget _tag(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
       child: Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }

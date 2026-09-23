@@ -20,6 +20,15 @@ public class CounsellorReviewService : ICounsellorReviewService
         _agentService = agentService;
     }
 
+    public async Task<IReadOnlyList<PathwayReviewResponseDto>> GetPendingReviewsAsync()
+    {
+        var rows = await _context.PathwayReviews.AsNoTracking()
+            .Where(r => r.Status == "Pending")
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+        return rows.Select(Map).ToList();
+    }
+
     public async Task<PagedReviewsDto> GetReviewsAsync(string status, string? search, string sort, int page, int pageSize)
     {
         page = Math.Max(1, page);
@@ -113,8 +122,9 @@ public class CounsellorReviewService : ICounsellorReviewService
         review.CounsellorId = counsellorId;
         review.ReviewedAt = DateTime.UtcNow;
         review.UpdatedAt = DateTime.UtcNow;
-        review.AuditEvents.Add(new PathwayReviewAudit
+        _context.PathwayReviewAudits.Add(new PathwayReviewAudit
         {
+            PathwayReviewId = review.Id,
             ActorUserId = counsellorId, Action = "CounsellorDecision", FromStatus = previous,
             ToStatus = dto.Decision, Details = review.CounsellorFeedback
         });
