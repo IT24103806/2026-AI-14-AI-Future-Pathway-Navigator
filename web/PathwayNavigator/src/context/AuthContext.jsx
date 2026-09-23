@@ -1,9 +1,8 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { loginApi, registerApi, googleLoginApi } from '../api/authApi';
 import { STORAGE_KEYS } from '../config/constants';
 import { isTokenExpired } from '../utils/tokenUtils';
-
-export const AuthContext = createContext(null);
+import { AuthContext } from './AuthContextDefinition';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
