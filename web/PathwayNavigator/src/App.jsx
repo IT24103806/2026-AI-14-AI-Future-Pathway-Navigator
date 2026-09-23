@@ -11,7 +11,8 @@ import DashboardPage from './pages/DashboardPage';
 import CareerDiscoveryPage from './pages/CareerDiscoveryPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
-import CounsellorDashboardPage from './pages/CounsellorDashboardPage';
+
+import CounsellorDashboardPage from "./pages/CounsellorDashboardPage.jsx";
 import './App.css';
 
 function App() {
@@ -27,14 +28,21 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ForgotPasswordPage />} />
-              <Route path="/counsellor/dashboard" element={<CounsellorDashboardPage />} />
+              <Route
+                path="/counsellor/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['Counsellor', 'Admin']}>
+                    <CounsellorDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/onboarding"
                 element={
                   <ProtectedRoute>
                     <OnboardingPage />
                   </ProtectedRoute>
-                  
+
                 }
               />
               <Route
