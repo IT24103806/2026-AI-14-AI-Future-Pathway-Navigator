@@ -29,7 +29,7 @@ app.include_router(agent_1_router, prefix=settings.API_V1_STR)
 app.include_router(agent_2_router, prefix=settings.API_V1_STR)
 
 
-app.include_router(agent_4_router)
+app.include_router(agent_4_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     return {

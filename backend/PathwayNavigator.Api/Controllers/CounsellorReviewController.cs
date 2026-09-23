@@ -7,56 +7,72 @@ using PathwayNavigator.Api.Services;
 namespace PathwayNavigator.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Authorize]
+[Route("api/counsellor-review")]
 public class CounsellorReviewController : ControllerBase
 {
     private readonly ICounsellorReviewService _reviewService;
+    public CounsellorReviewController(ICounsellorReviewService reviewService) => _reviewService = reviewService;
 
-    public CounsellorReviewController(ICounsellorReviewService reviewService)
+    private Guid CurrentUserId()
     {
-        _reviewService = reviewService;
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(value, out var id) ? id : throw new UnauthorizedAccessException("Valid user ID claim is required.");
     }
 
-    // Endpoint 1: Counsellor ට pending reviews බැලීම
-    [HttpGet("pending")]
+    [HttpPost("analysis/{analysisId:guid}/evaluate")]
+    [Authorize(Roles = "Student")]
+    public async Task<IActionResult> StartRealityCheck(Guid analysisId, [FromBody] StartRealityCheckDto dto)
+    {
+        try { return Ok(await _reviewService.CreateAsync(analysisId, CurrentUserId(), dto)); }
+        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+        catch (HttpRequestException ex) { return StatusCode(502, new { message = ex.Message }); }
+        catch (InvalidDataException ex) { return StatusCode(502, new { message = ex.Message }); }
+    }
+
+    [HttpGet]
     [Authorize(Roles = "Counsellor,Admin")]
-    public async Task<IActionResult> GetPendingReviews()
+    public async Task<IActionResult> GetReviews(
+        [FromQuery] string status = "Pending", [FromQuery] string? search = null,
+        [FromQuery] string sort = "newest", [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var reviews = await _reviewService.GetPendingReviewsAsync();
-        return Ok(reviews);
+        try { return Ok(await _reviewService.GetReviewsAsync(status, search, sort, page, pageSize)); }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
-    // Endpoint 2: විශේෂිත review එකක විස්තර බැලීම
-    [HttpGet("{id}")]
-    [Authorize]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetReviewById(Guid id)
     {
-        var review = await _reviewService.GetReviewByIdAsync(id);
-        if (review == null) return NotFound("Review record not found");
-        return Ok(review);
+        var isStaff = User.IsInRole("Counsellor") || User.IsInRole("Admin");
+        var review = isStaff
+            ? await _reviewService.GetReviewByIdAsync(id)
+            : await _reviewService.GetReviewByIdForStudentAsync(id, CurrentUserId());
+        return review == null ? NotFound(new { message = "Review record not found." }) : Ok(review);
     }
 
-    // Endpoint 3: Counsellor Decision Submit කිරීම (Core Business Logic)
-    [HttpPost("{id}/decision")]
+    [HttpPost("{id:guid}/decision")]
     [Authorize(Roles = "Counsellor,Admin")]
     public async Task<IActionResult> SubmitDecision(Guid id, [FromBody] CounsellorDecisionDto dto)
     {
-        var counsellorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        Guid counsellorId = counsellorIdClaim != null ? Guid.Parse(counsellorIdClaim) : Guid.Empty;
-
-        var updated = await _reviewService.SubmitDecisionAsync(id, counsellorId, dto);
-        if (updated == null) return NotFound("Review not found");
-
-        return Ok(updated);
+        try
+        {
+            var updated = await _reviewService.SubmitDecisionAsync(id, CurrentUserId(), dto);
+            return updated == null ? NotFound(new { message = "Review not found." }) : Ok(updated);
+        }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
     }
 
-    // Endpoint 4: Mobile App එකෙන් ශිෂ්‍යයාට තමන්ගේ review status බැලීම
-    [HttpGet("student/{studentId}/status")]
-    [Authorize]
-    public async Task<IActionResult> GetStudentStatus(Guid studentId)
+    [HttpGet("me/status")]
+    [Authorize(Roles = "Student")]
+    public async Task<IActionResult> GetMyStatus()
     {
-        var status = await _reviewService.GetStudentReviewStatusAsync(studentId);
-        if (status == null) return NotFound("No reviews found for this student");
-        return Ok(status);
+        var status = await _reviewService.GetStudentReviewStatusAsync(CurrentUserId());
+        return status == null ? NotFound(new { message = "No pathway review has been submitted." }) : Ok(status);
     }
+
+    [HttpGet("me/history")]
+    [Authorize(Roles = "Student")]
+    public async Task<IActionResult> GetMyHistory() => Ok(await _reviewService.GetStudentHistoryAsync(CurrentUserId()));
 }

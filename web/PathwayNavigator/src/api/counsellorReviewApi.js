@@ -1,21 +1,31 @@
 import apiClient from './apiClient';
 
 export const counsellorReviewApi = {
+  getMyStatus: async () => {
+    const response = await apiClient.get('/counsellor-review/me/status');
+    return response.data;
+  },
+  getMyHistory: async () => {
+    const response = await apiClient.get('/counsellor-review/me/history');
+    return response.data;
+  },
   // Pending review ලැයිස්තුව ලබා ගැනීම
-  getPendingReviews: async () => {
-    const response = await apiClient.get('/CounsellorReview/pending');
+  getReviews: async ({ status = 'Pending', search = '', sort = 'newest', page = 1, pageSize = 10 } = {}) => {
+    const response = await apiClient.get('/counsellor-review', {
+      params: { status, search: search || undefined, sort, page, pageSize },
+    });
     return response.data;
   },
 
   // Review එකක තොරතුරු ලබා ගැනීම
   getReviewById: async (id) => {
-    const response = await apiClient.get(`/CounsellorReview/${id}`);
+    const response = await apiClient.get(`/counsellor-review/${id}`);
     return response.data;
   },
 
   // Counsellor තීරණය submit කිරීම (Approve / Reject / NeedsRevision)
   submitDecision: async (id, decision, feedback) => {
-    const response = await apiClient.post(`/CounsellorReview/${id}/decision`, {
+    const response = await apiClient.post(`/counsellor-review/${id}/decision`, {
       decision,
       feedback,
     });

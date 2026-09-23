@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using PathwayNavigator.Api.DTOs.Onboarding;
 using PathwayNavigator.Api.DTOs.Pathway;
 using PathwayNavigator.Api.DTOs.Profile;
+using PathwayNavigator.Api.DTOs.Review;
 
 namespace PathwayNavigator.Api.Services
 {
@@ -10,5 +11,7 @@ namespace PathwayNavigator.Api.Services
         Task<AgentChatResponseDto?> ProcessAgent1TurnAsync(AgentChatRequestDto request, string? userId = null);
 
         Task<PathwayAnalysisResponseDto?> ProcessAgent2AnalysisAsync(StudentProfileDto profile, string? userId = null);
+
+        Task<RealityCheckAgentResponseDto?> ProcessAgent4RealityCheckAsync(RealityCheckAgentRequestDto request);
     }
 }

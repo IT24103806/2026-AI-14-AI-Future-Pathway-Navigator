@@ -5,6 +5,7 @@ import FormInput from '../components/common/FormInput';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import GoogleSignInButton from '../components/common/GoogleSignInButton';
+import { dashboardPathForRole } from '../utils/roleRoutes';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -52,11 +53,11 @@ const LoginPage = () => {
     setApiError('');
 
     try {
-      await login({
+      const authData = await login({
         email: formData.email,
         password: formData.password,
       });
-      navigate(from, { replace: true });
+      navigate(from === '/dashboard' ? dashboardPathForRole(authData.role) : from, { replace: true });
     } catch (err) {
       setApiError(err.message || 'Login failed. Please verify your credentials.');
     } finally {
@@ -69,8 +70,8 @@ const LoginPage = () => {
     setApiError('');
 
     try {
-      await googleLogin(idToken);
-      navigate(from, { replace: true });
+      const authData = await googleLogin(idToken);
+      navigate(from === '/dashboard' ? dashboardPathForRole(authData.role) : from, { replace: true });
     } catch (err) {
       setApiError(err.message || 'Google authentication failed. Please try again.');
     } finally {
@@ -178,4 +179,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-

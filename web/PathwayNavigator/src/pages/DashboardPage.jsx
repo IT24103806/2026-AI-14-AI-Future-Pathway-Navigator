@@ -128,6 +128,12 @@ const DashboardPage = () => {
         </div>
 
         <div className="dash-card feature-card">
+          <div className="feature-icon">🛡️</div><h3>Reality Check & Approval</h3>
+          <p>View Agent 4 feasibility evidence, skill gaps, counsellor decision and your shortest gap-closing plan.</p>
+          <Link to="/student/reality-check" className="btn btn-sm btn-primary mt-2">View Reality Check</Link>
+        </div>
+
+        <div className="dash-card feature-card">
           <div className="feature-icon">🛡️</div>
           <h3>Security & JWT Access</h3>
           <p>
@@ -144,4 +150,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-

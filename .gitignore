@@ -1,0 +1,30 @@
+# Secrets and local configuration
+.env
+appsettings.Development.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# .NET
+**/bin/
+**/obj/
+
+# React
+**/node_modules/
+**/dist/
+coverage/
+
+# Flutter
+**/.dart_tool/
+**/build/
+.flutter-plugins-dependencies
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

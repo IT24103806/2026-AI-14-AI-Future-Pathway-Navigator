@@ -6,6 +6,7 @@ import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import GoogleSignInButton from '../components/common/GoogleSignInButton';
 import { ROLES } from '../config/constants';
+import { dashboardPathForRole } from '../utils/roleRoutes';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -65,12 +66,12 @@ const RegisterPage = () => {
     setApiError('');
 
     try {
-      await register({
+      const authData = await register({
         email: formData.email,
         password: formData.password,
         roleName: formData.roleName,
       });
-      navigate('/dashboard', { replace: true });
+      navigate(dashboardPathForRole(authData.role), { replace: true });
     } catch (err) {
       setApiError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -83,8 +84,8 @@ const RegisterPage = () => {
     setApiError('');
 
     try {
-      await googleLogin(idToken);
-      navigate('/dashboard', { replace: true });
+      const authData = await googleLogin(idToken);
+      navigate(dashboardPathForRole(authData.role), { replace: true });
     } catch (err) {
       setApiError(err.message || 'Google registration failed. Please try again.');
     } finally {
@@ -186,7 +187,7 @@ const RegisterPage = () => {
               className="form-select"
             >
               <option value={ROLES.STUDENT}>Student</option>
-              <option value={ROLES.INSTRUCTOR}>Instructor</option>
+              <option value={ROLES.COUNSELLOR}>Counsellor</option>
               <option value={ROLES.ADMIN}>Admin</option>
             </select>
           </div>
