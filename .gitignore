@@ -1,0 +1,16 @@
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
+
+# Local Python environments and secrets
+.venv/
+venv/
+.env
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Frontend dependencies and build output
+**/node_modules/
+**/dist/
