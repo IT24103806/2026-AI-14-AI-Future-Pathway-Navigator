@@ -5,7 +5,7 @@ import TrendBadge from './TrendBadge';
 import MissingSkillsPanel from './MissingSkillsPanel';
 import RoadmapTimeline from './RoadmapTimeline';
 
-const PathwayRecommendationCard = ({ recommendation, rank }) => {
+const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuilding }) => {
   const {
     label,
     pathway_name: pathwayName,
@@ -61,6 +61,15 @@ const PathwayRecommendationCard = ({ recommendation, rank }) => {
       </div>
 
       <RoadmapTimeline roadmap={roadmap} />
+
+      <button
+        type="button"
+        className="btn btn-sm btn-primary"
+        onClick={() => onBuildPlan(pathwayName)}
+        disabled={isBuilding}
+      >
+        {isBuilding ? 'Building roadmap...' : 'Build step-by-step roadmap'}
+      </button>
     </div>
   );
 };

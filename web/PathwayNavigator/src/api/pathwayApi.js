@@ -51,3 +51,16 @@ export const rejectPathwayAnalysisApi = async (id) => {
     handleError(error, 'Failed to reject this pathway analysis.');
   }
 };
+
+/** Builds the detailed Agent 3 roadmap for a selected recommendation. */
+export const buildPathwayPlanApi = async (selectedPathway, completedPhases = []) => {
+  try {
+    const response = await apiClient.post(API_ROUTES.PATHWAY_PLANNER_PLAN, {
+      selected_pathway: selectedPathway,
+      completed_phases: completedPhases,
+    });
+    return response.data;
+  } catch (error) {
+    handleError(error, 'Failed to build the pathway roadmap.');
+  }
+};

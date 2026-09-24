@@ -10,5 +10,7 @@ namespace PathwayNavigator.Api.Services
         Task<AgentChatResponseDto?> ProcessAgent1TurnAsync(AgentChatRequestDto request, string? userId = null);
 
         Task<PathwayAnalysisResponseDto?> ProcessAgent2AnalysisAsync(StudentProfileDto profile, string? userId = null);
+
+        Task<PathwayPlannerResponseDto?> ProcessAgent3PlanAsync(PathwayPlannerRequestDto request, string? userId = null);
     }
 }
