@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { analyzeCareerPathsApi, approvePathwayAnalysisApi, rejectPathwayAnalysisApi } from '../api/pathwayApi';
+import { analyzeCareerPathsApi, approvePathwayAnalysisApi, rejectPathwayAnalysisApi, buildPathwayPlanApi } from '../api/pathwayApi';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import PathwayRecommendationCard from '../components/pathway/PathwayRecommendationCard';
@@ -23,6 +23,8 @@ const CareerDiscoveryPage = () => {
   const [isDeciding, setIsDeciding] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasRun, setHasRun] = useState(false);
+  const [plannerResult, setPlannerResult] = useState(null);
+  const [planningPathway, setPlanningPathway] = useState('');
 
   const handleAnalyze = async () => {
     setIsLoading(true);
@@ -35,6 +37,18 @@ const CareerDiscoveryPage = () => {
       setErrorMessage(err.message || 'Something went wrong while analyzing your pathways.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBuildPlan = async (pathwayName) => {
+    setPlanningPathway(pathwayName);
+    setErrorMessage('');
+    try {
+      setPlannerResult(await buildPathwayPlanApi(pathwayName));
+    } catch (err) {
+      setErrorMessage(err.message || 'Something went wrong while building the roadmap.');
+    } finally {
+      setPlanningPathway('');
     }
   };
 
@@ -147,9 +161,36 @@ const CareerDiscoveryPage = () => {
 
               <div className="pathway-cards-grid">
                 {result.recommendations.map((rec, idx) => (
-                  <PathwayRecommendationCard key={rec.pathway_name} recommendation={rec} rank={idx} />
+                  <PathwayRecommendationCard
+                    key={rec.pathway_name}
+                    recommendation={rec}
+                    rank={idx}
+                    onBuildPlan={handleBuildPlan}
+                    isBuilding={planningPathway === rec.pathway_name}
+                  />
                 ))}
               </div>
+
+              {plannerResult?.status === 'ready' && (
+                <section className="career-results-section">
+                  <div className="career-results-header">
+                    <h2>{plannerResult.selected_pathway} roadmap</h2>
+                    <span className="workflow-id-tag code-font">Workflow: {plannerResult.workflow_id}</span>
+                  </div>
+                  <p className="pathway-reasoning">Next action: {plannerResult.next_action}</p>
+                  <div className="pathway-cards-grid">
+                    {plannerResult.roadmap.map((step) => (
+                      <div className="how-it-works-card" key={step.stage}>
+                        <span className="pathway-label-pill">{step.order}. {step.stage.replace('_', ' ')}</span>
+                        <h3>{step.title}</h3>
+                        <p>{step.outcome}</p>
+                        <p className="text-dim">{step.actions.join(' ')}</p>
+                        <span className="data-source-badge data-source-simulated">Estimated: {step.estimated_duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </div>
