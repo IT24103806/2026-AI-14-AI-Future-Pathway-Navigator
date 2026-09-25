@@ -147,6 +147,7 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+<<<<<<< Updated upstream
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -160,6 +161,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+=======
+>>>>>>> Stashed changes
   http:
     dependency: "direct main"
     description:
@@ -176,6 +179,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+<<<<<<< Updated upstream
   jni:
     dependency: transitive
     description:
@@ -208,6 +212,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.7"
+=======
+>>>>>>> Stashed changes
   leak_tracker:
     dependency: transitive
     description:
@@ -272,6 +278,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.0"
+<<<<<<< Updated upstream
   objective_c:
     dependency: transitive
     description:
@@ -288,6 +295,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+=======
+>>>>>>> Stashed changes
   path:
     dependency: transitive
     description:
@@ -441,10 +450,17 @@ packages:
     dependency: transitive
     description:
       name: vector_math
+<<<<<<< Updated upstream
       sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47
       url: "https://pub.dev"
     source: hosted
     version: "2.4.2"
+=======
+      sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+>>>>>>> Stashed changes
   vm_service:
     dependency: transitive
     description:
@@ -461,6 +477,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+<<<<<<< Updated upstream
   win32:
     dependency: transitive
     description:
@@ -485,6 +502,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.4"
+=======
+>>>>>>> Stashed changes
 sdks:
   dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.38.4"
