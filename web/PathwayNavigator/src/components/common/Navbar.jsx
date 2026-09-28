@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { dashboardPathForRole } from '../../utils/roleRoutes';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -22,15 +23,15 @@ const Navbar = () => {
         <nav className="navbar-links">
           {isAuthenticated ? (
             <div className="nav-user-section">
-              <Link to="/onboarding" className="nav-link">
+              {user?.role === 'Student' && <Link to="/onboarding" className="nav-link">
                 🤖 AI Onboarding
-              </Link>
-              <Link to="/career-discovery" className="nav-link">
+              </Link>}
+              {user?.role === 'Student' && <Link to="/career-discovery" className="nav-link">
                 🧭 Career Discovery
-              </Link>
-              <Link to="/dashboard" className="nav-link">
-                Dashboard
-              </Link>
+              </Link>}
+              {user?.role === 'Student' && <Link to="/student/reality-check" className="nav-link">🛡️ Reality Check</Link>}
+              {(user?.role === 'Counsellor' || user?.role === 'Admin') && <Link to="/counsellor/dashboard" className="nav-link">✅ Approval Centre</Link>}
+              <Link to={dashboardPathForRole(user?.role)} className="nav-link">{user?.role} Dashboard</Link>
               <div className="user-profile-badge">
                 <span className="user-email">{user?.email}</span>
                 <span className={`role-tag role-${user?.role?.toLowerCase()}`}>

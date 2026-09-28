@@ -14,6 +14,7 @@ namespace PathwayNavigator.Api.Data
         public DbSet<PathwayAnalysis> PathwayAnalyses { get; set; }
 
         public DbSet<PathwayReview> PathwayReviews { get; set; }
+        public DbSet<PathwayReviewAudit> PathwayReviewAudits { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -71,6 +72,27 @@ namespace PathwayNavigator.Api.Data
                 .WithMany()
                 .HasForeignKey(a => a.ApprovedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<PathwayReview>()
+                .HasIndex(r => r.WorkflowId)
+                .IsUnique();
+            modelBuilder.Entity<PathwayReview>()
+                .HasIndex(r => new { r.Status, r.CreatedAt });
+            modelBuilder.Entity<PathwayReview>()
+                .HasOne(r => r.PathwayAnalysis)
+                .WithMany()
+                .HasForeignKey(r => r.PathwayAnalysisId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PathwayReview>()
+                .HasOne(r => r.Student)
+                .WithMany()
+                .HasForeignKey(r => r.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PathwayReview>()
+                .HasMany(r => r.AuditEvents)
+                .WithOne(a => a.PathwayReview)
+                .HasForeignKey(a => a.PathwayReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

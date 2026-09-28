@@ -1,16 +1,30 @@
-# Python runtime artifacts
+# Secrets and local configuration
+.env
+appsettings.Development.json
+
+# Python
 __pycache__/
 *.py[cod]
-
-# Local Python environments and secrets
+.pytest_cache/
 .venv/
 venv/
-.env
 
-# .NET build output
+# .NET
 **/bin/
 **/obj/
 
-# Frontend dependencies and build output
+# React
 **/node_modules/
 **/dist/
+coverage/
+
+# Flutter
+**/.dart_tool/
+**/build/
+.flutter-plugins-dependencies
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

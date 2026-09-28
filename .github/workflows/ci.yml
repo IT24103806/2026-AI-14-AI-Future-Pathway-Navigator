@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x' # Adjust to your specific .NET 8/7 version
 
@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'
 
@@ -51,8 +51,44 @@ jobs:
       working-directory: ./web/PathwayNavigator
       run: npm run lint
 
+    - name: Run React component and integration tests
+      working-directory: ./web/PathwayNavigator
+      run: npm test
+
     - name: Build React Application
       working-directory: ./web/PathwayNavigator
       run: npm run build
 
+  test-agent-4:
+    name: Agent 4 (Python) Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install AI service dependencies
+      working-directory: ./ai_service
+      run: pip install -r requirements.txt
+    - name: Run deterministic agent evaluation
+      working-directory: ./ai_service
+      run: pytest -q tests/test_agent_4.py
+
+  test-flutter-member-4:
+    name: Flutter Member 4 Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+    - name: Restore Flutter packages
+      working-directory: ./mobile/PathwayNavigator
+      run: flutter pub get
+    - name: Analyze Flutter code
+      working-directory: ./mobile/PathwayNavigator
+      run: flutter analyze
+    - name: Run Flutter tests
+      working-directory: ./mobile/PathwayNavigator
+      run: flutter test
 

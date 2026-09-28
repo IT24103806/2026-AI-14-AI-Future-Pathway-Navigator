@@ -1,242 +1,277 @@
 import 'package:flutter/material.dart';
+import 'member4_api.dart';
+import 'member4_login_screen.dart';
+import 'reality_check_submission_screen.dart';
 
 class PathwayStatusScreen extends StatefulWidget {
-  final String studentId;
-  const PathwayStatusScreen({super.key, required this.studentId});
+  final Member4Api api;
+  const PathwayStatusScreen({super.key, required this.api});
 
   @override
   State<PathwayStatusScreen> createState() => _PathwayStatusScreenState();
 }
 
 class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
-  final String _status = "Pending";
-  final int _feasibilityScore = 75;
-  final List<String> _missingSkills = const [
-    "Python Foundations",
-    "Data Structures",
-    "SQL Databases"
-  ];
-  final String _riskReason =
-      "Prerequisite gap: Computing transition requires accredited introductory coursework.";
-  final String _counsellorNote =
-      "Pathway conditionally flagged. Book a 1-on-1 session or complete remedial courses.";
+  PathwayReviewStatus? _status;
+  List<PathwayReviewStatus> _history = [];
+  bool _loading = true;
+  String? _error;
   DateTime? _bookedDate;
 
-  // Native Device Feature: Consultation Date Picker
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final values = await Future.wait([
+        widget.api.getMyStatus(),
+        widget.api.getMyHistory(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _status = values[0] as PathwayReviewStatus;
+          _history = values[1] as List<PathwayReviewStatus>;
+        });
+      }
+    } on Member4ApiException catch (error) {
+      if (error.statusCode == 401) {
+        await widget.api.logout();
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => Member4LoginScreen(api: widget.api)),
+          );
+        }
+      } else if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Unexpected error. Check your connection and retry.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   Future<void> _selectConsultationDate() async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 60)),
     );
-
-    if (!mounted || picked == null) return;
-
-    setState(() {
-      _bookedDate = picked;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            'Session booked for: ${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}'),
-        backgroundColor: Colors.teal,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Color _getStatusColor() {
-    switch (_status) {
-      case "Approved":
-        return const Color(0xFF16A34A);
-      case "NeedsRevision":
-        return const Color(0xFFD97706);
-      default:
-        return const Color(0xFF2563EB);
+    if (picked != null && mounted) {
+      setState(() => _bookedDate = picked);
     }
   }
 
+  Color _statusColor(String status) => switch (status) {
+        'Approved' => Colors.green,
+        'Rejected' => Colors.red,
+        'NeedsRevision' => Colors.orange,
+        _ => Colors.blue,
+      };
+
   @override
-  Widget build(BuildContext context) {
-    final statusColor = _getStatusColor();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Feasibility & Approval'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status Header Banner
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.assignment_turned_in_outlined,
-                      color: statusColor, size: 36),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Review Status',
-                          style:
-                              TextStyle(color: Colors.black54, fontSize: 13)),
-                      Text(
-                        _status,
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: statusColor),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Feasibility & approval'),
+          actions: [
+            IconButton(
+              tooltip: 'New reality check',
+              onPressed: () async {
+                final changed = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => RealityCheckSubmissionScreen(api: widget.api)),
+                );
+                if (changed == true) {
+                  _load();
+                }
+              },
+              icon: const Icon(Icons.add_task),
             ),
-            const SizedBox(height: 20),
-
-            // AI Feasibility Score Progress
-            Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Agent 4 Reality Match',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('$_feasibilityScore%',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2563EB))),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: _feasibilityScore / 100,
-                        minHeight: 10,
-                        backgroundColor: Colors.grey.shade200,
-                        color: _feasibilityScore > 70
-                            ? Colors.green
-                            : Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
             ),
-            const SizedBox(height: 16),
-
-            // Risk Assessment Flag Card
-            if (_riskReason.isNotEmpty) ...[
-              Card(
-                color: const Color(0xFFFFF1F2),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: Color(0xFFBE123C)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Flagged Entry Risk:',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF9F1239))),
-                            const SizedBox(height: 4),
-                            Text(_riskReason,
-                                style: const TextStyle(
-                                    color: Color(0xFFBE123C), fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Missing Prerequisites
-            const Text('Identified Skill Gaps',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: _missingSkills
-                  .map((skill) => Chip(
-                        label: Text(skill,
-                            style: const TextStyle(fontSize: 12)),
-                        avatar: const Icon(Icons.school_outlined, size: 16),
-                        backgroundColor: const Color(0xFFEFF6FF),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 20),
-
-            // Counsellor Remarks
-            Card(
-              color: const Color(0xFFF8FAFC),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Counsellor Feedback / Instruction:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    Text(_counsellorNote,
-                        style: const TextStyle(
-                            color: Color(0xFF475569), fontSize: 13)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Device Feature: Date Picker Button for 1-on-1 Consultation
-            FilledButton.icon(
-              onPressed: _selectConsultationDate,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text(_bookedDate == null
-                  ? 'Book Counsellor 1-on-1 Session'
-                  : 'Session Date: ${_bookedDate!.year}-${_bookedDate!.month.toString().padLeft(2, '0')}-${_bookedDate!.day.toString().padLeft(2, '0')}'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                backgroundColor: const Color(0xFF2563EB),
-              ),
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: () async {
+                await widget.api.logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => Member4LoginScreen(api: widget.api)),
+                  );
+                }
+              },
+              icon: const Icon(Icons.logout),
             ),
           ],
         ),
-      ),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: _loading
+              ? ListView(
+                  children: const [
+                    SizedBox(height: 260),
+                    Center(child: CircularProgressIndicator()),
+                  ],
+                )
+              : _error != null
+                  ? ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        const SizedBox(height: 160),
+                        const Icon(Icons.info_outline, size: 52),
+                        const SizedBox(height: 12),
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                      ],
+                    )
+                  : _content(),
+        ),
+      );
+
+  Widget _content() {
+    final status = _status!;
+    final color = _statusColor(status.status);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          color: color.withValues(alpha: .1),
+          child: ListTile(
+            leading: Icon(Icons.verified_outlined, color: color, size: 36),
+            title: Text(status.targetCareer, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Workflow ${status.workflowId}\nSubmitted ${status.createdAt.toLocal()}'),
+            trailing: Chip(label: Text(status.status)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Reality match', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('${status.feasibilityScore}%'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(value: status.feasibilityScore / 100),
+              ],
+            ),
+          ),
+        ),
+        if (status.isHighRisk)
+          Card(
+            color: Colors.red.shade50,
+            child: ListTile(
+              leading: const Icon(Icons.warning_amber, color: Colors.red),
+              title: const Text('Risk requiring human review'),
+              subtitle: Text(status.riskReason ?? 'Risk details unavailable.'),
+            ),
+          ),
+        const SizedBox(height: 12),
+        const Text('Identified skill gaps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        status.missingSkills.isEmpty
+            ? const Text('No major prerequisite gaps identified.')
+            : Wrap(
+                spacing: 8,
+                children: status.missingSkills.map((skill) => Chip(label: Text(skill))).toList(),
+              ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Qualification & entry reality', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(status.degreeRequirement),
+                if (status.subjectRequirements.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('Subjects: ${status.subjectRequirements.join(', ')}'),
+                ],
+                if (status.entryRequirements.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...status.entryRequirements.map((item) => Text('• $item')),
+                ],
+                const SizedBox(height: 8),
+                Text('Cost: ${status.costGuidance}'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Shortest gap-closing plan', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...status.gapClosurePlan.asMap().entries.map((entry) => Text('${entry.key + 1}. ${entry.value}')),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.support_agent),
+            title: const Text('Counsellor feedback'),
+            subtitle: Text(
+              status.feedback ??
+                  (status.status == 'Pending'
+                      ? 'Waiting for an authorized counsellor decision.'
+                      : 'No feedback provided.'),
+            ),
+          ),
+        ),
+        if (status.status == 'NeedsRevision')
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: FilledButton.icon(
+              onPressed: _selectConsultationDate,
+              icon: const Icon(Icons.calendar_month),
+              label: Text(
+                _bookedDate == null
+                    ? 'Choose consultation date'
+                    : 'Consultation: ${_bookedDate!.toLocal().toString().split(' ').first}',
+              ),
+            ),
+          ),
+        const SizedBox(height: 24),
+        const Text('Review history', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ..._history.map(
+          (item) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.circle, size: 12, color: _statusColor(item.status)),
+            title: Text(item.targetCareer),
+            subtitle: Text(item.createdAt.toLocal().toString()),
+            trailing: Text(item.status),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,10 +1,11 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(case_sensitive=True)
     PROJECT_NAME: str = "PathwayNavigator AI Microservice"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
@@ -26,11 +27,7 @@ class Settings(BaseSettings):
         "http://localhost:5081",
         "https://localhost:7001",
         "http://localhost:5173",
-        "http://localhost:3000",
-        "*"
+        "http://localhost:3000"
     ]
-
-    class Config:
-        case_sensitive = True
 
 settings = Settings()

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using PathwayNavigator.Api.DTOs.Onboarding;
 using PathwayNavigator.Api.DTOs.Pathway;
 using PathwayNavigator.Api.DTOs.Profile;
+using PathwayNavigator.Api.DTOs.Review;
 
 namespace PathwayNavigator.Api.Services
 {
@@ -101,6 +102,33 @@ namespace PathwayNavigator.Api.Services
             }
 
             // No fabricated fallback here — career recommendations must come from the real agent.
+            return null;
+        }
+
+        public async Task<RealityCheckAgentResponseDto?> ProcessAgent4RealityCheckAsync(RealityCheckAgentRequestDto request)
+        {
+            for (var attempt = 1; attempt <= 2; attempt++)
+            {
+                try
+                {
+                    using var response = await _httpClient.PostAsJsonAsync("/api/v1/agent-4/evaluate", request);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("Agent 4 attempt {Attempt} returned {StatusCode}", attempt, response.StatusCode);
+                        if ((int)response.StatusCode < 500) return null;
+                    }
+                    else
+                    {
+                        return await response.Content.ReadFromJsonAsync<RealityCheckAgentResponseDto>(
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+
+                }
+                catch (TaskCanceledException ex) { _logger.LogError(ex, "Agent 4 attempt {Attempt} timed out", attempt); }
+                catch (HttpRequestException ex) { _logger.LogError(ex, "Agent 4 attempt {Attempt} failed", attempt); }
+                if (attempt < 2) await Task.Delay(TimeSpan.FromMilliseconds(200));
+            }
+
             return null;
         }
 

@@ -83,8 +83,12 @@ def fallback_extract_slots(user_text: str, current_slots: ExtractedProfileSlots)
         match = re.search(pattern, text_lower)
         if match:
             ambition = match.group(1).strip().split(".")[0].split(",")[0]
+            ambition = re.sub(r"^(?:a|an)\s+", "", ambition, flags=re.IGNORECASE)
             if len(ambition) > 2:
-                slots.career_ambitions = ambition.title()
+                normalized_ambition = ambition.title()
+                normalized_ambition = re.sub(r"\bAi\b", "AI", normalized_ambition)
+                normalized_ambition = re.sub(r"\bUi/Ux\b", "UI/UX", normalized_ambition)
+                slots.career_ambitions = normalized_ambition
                 break
 
     if not slots.career_ambitions and ("software engineer" in text_lower or "data scientist" in text_lower or "ai engineer" in text_lower or "web developer" in text_lower):

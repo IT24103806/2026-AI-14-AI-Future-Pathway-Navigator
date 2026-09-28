@@ -13,6 +13,9 @@ import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
 
 import CounsellorDashboardPage from "./pages/CounsellorDashboardPage.jsx";
+import AdminDashboardPage from './pages/AdminDashboardPage.jsx';
+import RoleDashboardRoute from './components/common/RoleDashboardRoute.jsx';
+import StudentRealityCheckPage from './pages/StudentRealityCheckPage.jsx';
 import './App.css';
 
 function App() {
@@ -39,7 +42,7 @@ function App() {
               <Route
                 path="/onboarding"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['Student']}>
                     <OnboardingPage />
                   </ProtectedRoute>
 
@@ -49,14 +52,17 @@ function App() {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <DashboardPage />
+                    <RoleDashboardRoute />
                   </ProtectedRoute>
                 }
               />
+              <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['Student']}><DashboardPage /></ProtectedRoute>} />
+              <Route path="/student/reality-check" element={<ProtectedRoute allowedRoles={['Student']}><StudentRealityCheckPage /></ProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
               <Route
                 path="/career-discovery"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['Student']}>
                     <CareerDiscoveryPage />
                   </ProtectedRoute>
                 }

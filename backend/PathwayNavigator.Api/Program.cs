@@ -17,7 +17,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
+        var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+        policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -31,9 +33,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ?? "Host=localhost;Port=5432;Database=PathwayNavigatorDb;Username=postgres;Password=postgres"));
 
 // 3. SECURITY FIRST: Configure JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secret = jwtSettings["Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secret = jwtSettings["Secret"]
+    ?? throw new InvalidOperationException("JwtSettings:Secret is not configured.");
 var secretKey = Encoding.UTF8.GetBytes(secret);
 
 builder.Services.AddAuthentication(options =>
@@ -79,11 +81,8 @@ var app = builder.Build();
 app.UseCors("AllowReactApp");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
@@ -112,6 +111,36 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
+
+
+
+
+
+
+
+
+// Auto-seed default roles if missing
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PathwayNavigator.Api.Data.AppDbContext>();
+    if (!dbContext.Roles.Any(r => r.Name == "Student"))
+    {
+        dbContext.Roles.AddRange(
+            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Student", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Counsellor", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Admin", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        dbContext.SaveChanges();
+    }
+}
+
+
+
+
+
+
+
+
 
 app.Run();
 

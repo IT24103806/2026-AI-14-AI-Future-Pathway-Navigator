@@ -8,11 +8,13 @@ using PathwayNavigator.Api.DTOs.Review;
 using PathwayNavigator.Api.Models;
 using PathwayNavigator.Api.Services;
 using Xunit;
+using Moq;
 
 namespace PathwayNavigator.Tests;
 
 public class CounsellorReviewServiceTests
 {
+    private readonly Mock<IAgentService> _agentService = new();
     private AppDbContext GetInMemoryDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -49,7 +51,7 @@ public class CounsellorReviewServiceTests
         );
         await context.SaveChangesAsync();
 
-        var service = new CounsellorReviewService(context);
+        var service = new CounsellorReviewService(context, _agentService.Object);
 
         // Act
         var result = await service.GetPendingReviewsAsync();
@@ -83,7 +85,7 @@ public class CounsellorReviewServiceTests
         context.PathwayReviews.Add(review);
         await context.SaveChangesAsync();
 
-        var service = new CounsellorReviewService(context);
+        var service = new CounsellorReviewService(context, _agentService.Object);
         var decisionDto = new CounsellorDecisionDto
         {
             Decision = decision,
@@ -102,5 +104,40 @@ public class CounsellorReviewServiceTests
         Assert.Equal(decisionDto.Feedback, updatedReview.CounsellorFeedback);
         Assert.Equal(counsellorId, updatedReview.CounsellorId);
         Assert.NotNull(updatedReview.ReviewedAt);
+    }
+
+    [Fact]
+    public async Task SubmitDecisionAsync_ShouldRejectSecondDecision()
+    {
+        using var context = GetInMemoryDbContext();
+        var review = new PathwayReview
+        {
+            StudentId = Guid.NewGuid(), PathwayAnalysisId = Guid.NewGuid(), WorkflowId = "wf-test",
+            TargetCareer = "AI Engineer", Status = "Approved", CounsellorFeedback = "Already completed"
+        };
+        context.PathwayReviews.Add(review);
+        await context.SaveChangesAsync();
+        var service = new CounsellorReviewService(context, _agentService.Object);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SubmitDecisionAsync(
+            review.Id, Guid.NewGuid(), new CounsellorDecisionDto { Decision = "Rejected", Feedback = "Try changing it." }));
+    }
+
+    [Fact]
+    public async Task GetReviewByIdForStudentAsync_ShouldEnforceOwnership()
+    {
+        using var context = GetInMemoryDbContext();
+        var ownerId = Guid.NewGuid();
+        var review = new PathwayReview
+        {
+            StudentId = ownerId, PathwayAnalysisId = Guid.NewGuid(), WorkflowId = "wf-owner",
+            TargetCareer = "Software Engineer", Status = "Pending"
+        };
+        context.PathwayReviews.Add(review);
+        await context.SaveChangesAsync();
+        var service = new CounsellorReviewService(context, _agentService.Object);
+
+        Assert.NotNull(await service.GetReviewByIdForStudentAsync(review.Id, ownerId));
+        Assert.Null(await service.GetReviewByIdForStudentAsync(review.Id, Guid.NewGuid()));
     }
 }
