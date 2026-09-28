@@ -13,5 +13,6 @@ namespace PathwayNavigator.Api.Services
         Task<PathwayAnalysisResponseDto?> ProcessAgent2AnalysisAsync(StudentProfileDto profile, string? userId = null);
 
         Task<RealityCheckAgentResponseDto?> ProcessAgent4RealityCheckAsync(RealityCheckAgentRequestDto request);
+        Task<PathwayPlannerResponseDto?> ProcessAgent3PlanAsync(PathwayPlannerRequestDto request, string? userId = null);
     }
 }

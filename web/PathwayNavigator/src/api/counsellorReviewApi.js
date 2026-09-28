@@ -1,6 +1,10 @@
 import apiClient from './apiClient';
 
 export const counsellorReviewApi = {
+  startRealityCheck: async (analysisId, input) => {
+    const response = await apiClient.post(`/counsellor-review/analysis/${analysisId}/evaluate`, input);
+    return response.data;
+  },
   getMyStatus: async () => {
     const response = await apiClient.get('/counsellor-review/me/status');
     return response.data;

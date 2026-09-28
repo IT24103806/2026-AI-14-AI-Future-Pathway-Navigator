@@ -20,6 +20,29 @@ namespace PathwayNavigator.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Role>().HasData(
+                new Role
+                {
+                    Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                    Name = "Student",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Role
+                {
+                    Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                    Name = "Counsellor",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Role
+                {
+                    Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                    Name = "Admin",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                });
+
             // Enforce unique email constraint
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)

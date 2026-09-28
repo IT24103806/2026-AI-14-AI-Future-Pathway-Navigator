@@ -76,6 +76,9 @@ public class CounsellorReviewService : ICounsellorReviewService
         if (agentResult.FeasibilityScore is < 0 or > 100 || string.IsNullOrWhiteSpace(agentResult.WorkflowId))
             throw new InvalidDataException("Reality Check Agent returned an invalid structured result.");
 
+        if (agentResult.Status == "safe_failure" || !string.IsNullOrWhiteSpace(agentResult.Error))
+            throw new InvalidDataException("Reality Check could not validate this pathway; no approval was recorded.");
+
         var initialStatus = agentResult.CounsellorReviewRequired ? "Pending" : "Approved";
         var row = new PathwayReview
         {

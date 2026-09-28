@@ -128,6 +128,38 @@ namespace PathwayNavigator.Api.Services
                 catch (HttpRequestException ex) { _logger.LogError(ex, "Agent 4 attempt {Attempt} failed", attempt); }
                 if (attempt < 2) await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
+
+            return null;
+        }
+
+        public async Task<PathwayPlannerResponseDto?> ProcessAgent3PlanAsync(PathwayPlannerRequestDto request, string? userId = null)
+        {
+            try
+            {
+                var payload = new
+                {
+                    user_id = userId,
+                    selected_pathway = request.SelectedPathway,
+                    profile = request.Profile,
+                    completed_phases = request.CompletedPhases
+                };
+
+                var response = await _httpClient.PostAsJsonAsync("/api/v1/agent-3/plan", payload);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<PathwayPlannerResponseDto>(new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+
+                _logger.LogError("AI Microservice (Agent 3) returned error status {StatusCode}", response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to communicate with AI microservice (Agent 3) at {BaseAddress}", _httpClient.BaseAddress);
+            }
+
             return null;
         }
 

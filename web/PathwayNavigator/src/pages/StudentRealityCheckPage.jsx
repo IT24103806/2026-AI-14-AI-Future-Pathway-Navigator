@@ -15,7 +15,7 @@ export default function StudentRealityCheckPage() {
   const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const load = useCallback(async () => {
     setLoading(true); setError('');
-    try { const [latest, past] = await Promise.all([counsellorReviewApi.getMyStatus(), counsellorReviewApi.getMyHistory()]); setStatus(latest); setHistory(past); }
+    try { const [latest, past] = await Promise.all([counsellorReviewApi.getMyStatus().catch((err) => { if (err.response?.status === 404) return null; throw err; }), counsellorReviewApi.getMyHistory()]); setHistory(past); setStatus(latest || past[0] || null); }
     catch (err) { if (err.response?.status === 404) setStatus(null); else setError(err.response?.data?.message || 'Unable to load your Reality Check result.'); }
     finally { setLoading(false); }
   }, []);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { analyzeCareerPathsApi, approvePathwayAnalysisApi, rejectPathwayAnalysisApi } from '../api/pathwayApi';
+import { analyzeCareerPathsApi, approvePathwayAnalysisApi, rejectPathwayAnalysisApi, buildPathwayPlanApi } from '../api/pathwayApi';
+import { counsellorReviewApi } from '../api/counsellorReviewApi';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import PathwayRecommendationCard from '../components/pathway/PathwayRecommendationCard';
@@ -23,6 +24,28 @@ const CareerDiscoveryPage = () => {
   const [isDeciding, setIsDeciding] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasRun, setHasRun] = useState(false);
+  const [plannerResult, setPlannerResult] = useState(null);
+  const [planningPathway, setPlanningPathway] = useState('');
+  const [reviewCareer, setReviewCareer] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewInput, setReviewInput] = useState({ alStream: '', alResults: '', budgetLevel: 'Medium', currentSkills: '' });
+
+  const startRealityCheck = async (event) => {
+    event.preventDefault();
+    if (!result?.id || !reviewCareer) return;
+    setReviewBusy(true); setReviewMessage('');
+    try {
+      const review = await counsellorReviewApi.startRealityCheck(result.id, {
+        targetCareer: reviewCareer, alStream: reviewInput.alStream.trim(),
+        alResults: reviewInput.alResults.trim().toUpperCase(), budgetLevel: reviewInput.budgetLevel,
+        currentSkills: reviewInput.currentSkills.split(',').map((skill) => skill.trim()).filter(Boolean),
+      });
+      setReviewMessage(`Reality Check saved: ${review.status}. View the result on your Reality Check page.`);
+    } catch (error) {
+      setReviewMessage(error.response?.data?.message || 'Reality Check failed. Check the API and AI service, then try again.');
+    } finally { setReviewBusy(false); }
+  };
 
   const handleAnalyze = async () => {
     setIsLoading(true);
@@ -35,6 +58,18 @@ const CareerDiscoveryPage = () => {
       setErrorMessage(err.message || 'Something went wrong while analyzing your pathways.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBuildPlan = async (pathwayName) => {
+    setPlanningPathway(pathwayName);
+    setErrorMessage('');
+    try {
+      setPlannerResult(await buildPathwayPlanApi(pathwayName));
+    } catch (err) {
+      setErrorMessage(err.message || 'Something went wrong while building the roadmap.');
+    } finally {
+      setPlanningPathway('');
     }
   };
 
@@ -147,9 +182,53 @@ const CareerDiscoveryPage = () => {
 
               <div className="pathway-cards-grid">
                 {result.recommendations.map((rec, idx) => (
-                  <PathwayRecommendationCard key={rec.pathway_name} recommendation={rec} rank={idx} />
+                  <PathwayRecommendationCard
+                    key={rec.pathway_name}
+                    recommendation={rec}
+                    rank={idx}
+                    onBuildPlan={handleBuildPlan}
+                    isBuilding={planningPathway === rec.pathway_name}
+                  />
                 ))}
               </div>
+
+              <section className="reality-panel" aria-label="Agent 4 Reality Check">
+                <h2>Agent 4 · Reality Check</h2>
+                <p>Select a recommended career and enter your actual A/L results, budget and skills. A counsellor reviews any flagged risks.</p>
+                <form onSubmit={startRealityCheck}>
+                  <label>Recommended career <select required value={reviewCareer} onChange={(event) => setReviewCareer(event.target.value)}>
+                    <option value="">Select a career</option>
+                    {result.recommendations.map((rec) => <option key={rec.pathway_name} value={rec.pathway_name}>{rec.pathway_name}</option>)}
+                  </select></label>
+                  <label>A/L stream <input required minLength={2} maxLength={80} value={reviewInput.alStream} onChange={(event) => setReviewInput({ ...reviewInput, alStream: event.target.value })} placeholder="Physical Science" /></label>
+                  <label>A/L grades <input required pattern="[ABCFSabcfs](\s*[,/]\s*[ABCFSabcfs])*" value={reviewInput.alResults} onChange={(event) => setReviewInput({ ...reviewInput, alResults: event.target.value })} placeholder="A,B,C" /></label>
+                  <label>Budget <select value={reviewInput.budgetLevel} onChange={(event) => setReviewInput({ ...reviewInput, budgetLevel: event.target.value })}>{['Low', 'Medium', 'High'].map((v) => <option key={v}>{v}</option>)}</select></label>
+                  <label>Current skills (comma separated) <input value={reviewInput.currentSkills} onChange={(event) => setReviewInput({ ...reviewInput, currentSkills: event.target.value })} placeholder="Python, communication" /></label>
+                  <button className="btn btn-primary" disabled={reviewBusy || !result.id} type="submit">{reviewBusy ? 'Checking…' : 'Run Reality Check'}</button>
+                </form>
+                {reviewMessage && <p role="status">{reviewMessage} <Link to="/student/reality-check">View Reality Check</Link></p>}
+              </section>
+
+              {plannerResult?.status === 'ready' && (
+                <section className="career-results-section">
+                  <div className="career-results-header">
+                    <h2>{plannerResult.selected_pathway} roadmap</h2>
+                    <span className="workflow-id-tag code-font">Workflow: {plannerResult.workflow_id}</span>
+                  </div>
+                  <p className="pathway-reasoning">Next action: {plannerResult.next_action}</p>
+                  <div className="pathway-cards-grid">
+                    {plannerResult.roadmap.map((step) => (
+                      <div className="how-it-works-card" key={step.stage}>
+                        <span className="pathway-label-pill">{step.order}. {step.stage.replace('_', ' ')}</span>
+                        <h3>{step.title}</h3>
+                        <p>{step.outcome}</p>
+                        <p className="text-dim">{step.actions.join(' ')}</p>
+                        <span className="data-source-badge data-source-simulated">Estimated: {step.estimated_duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </div>
