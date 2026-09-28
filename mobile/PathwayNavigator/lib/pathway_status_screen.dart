@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'member4_api.dart';
+import 'gap_closure_tasks_screen.dart';
 import 'member4_login_screen.dart';
 import 'reality_check_submission_screen.dart';
 
@@ -16,7 +17,7 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
   List<PathwayReviewStatus> _history = [];
   bool _loading = true;
   String? _error;
-  DateTime? _bookedDate;
+  DateTime? _historyDate;
 
   @override
   void initState() {
@@ -31,14 +32,11 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
     });
 
     try {
-      final values = await Future.wait([
-        widget.api.getMyStatus(),
-        widget.api.getMyHistory(),
-      ]);
+      final history = await widget.api.getMyHistory();
       if (mounted) {
         setState(() {
-          _status = values[0] as PathwayReviewStatus;
-          _history = values[1] as List<PathwayReviewStatus>;
+          _history = history;
+          _status = history.isEmpty ? null : history.first;
         });
       }
     } on Member4ApiException catch (error) {
@@ -63,15 +61,15 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
     }
   }
 
-  Future<void> _selectConsultationDate() async {
+  Future<void> _selectHistoryDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 60)),
+      initialDate: _historyDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
     );
     if (picked != null && mounted) {
-      setState(() => _bookedDate = picked);
+      setState(() => _historyDate = picked);
     }
   }
 
@@ -79,6 +77,7 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
         'Approved' => Colors.green,
         'Rejected' => Colors.red,
         'NeedsRevision' => Colors.orange,
+        'Failed' => Colors.red,
         _ => Colors.blue,
       };
 
@@ -139,7 +138,13 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
                         FilledButton(onPressed: _load, child: const Text('Retry')),
                       ],
                     )
-                  : _content(),
+                  : _status == null
+                      ? ListView(padding: const EdgeInsets.all(24), children: const [
+                          SizedBox(height: 160), Icon(Icons.route, size: 52),
+                          SizedBox(height: 16),
+                          Text('No Reality Check yet. Complete Career Discovery, then use the + button to select a saved analysis.'),
+                        ])
+                      : _content(),
         ),
       );
 
@@ -235,6 +240,8 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        Card(child: ListTile(title: const Text('My gap-closing tasks'), trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => GapClosureTasksScreen(api: widget.api, reviewId: status.id))))),
         Card(
           child: ListTile(
             leading: const Icon(Icons.support_agent),
@@ -247,22 +254,18 @@ class _PathwayStatusScreenState extends State<PathwayStatusScreen> {
             ),
           ),
         ),
-        if (status.status == 'NeedsRevision')
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: FilledButton.icon(
-              onPressed: _selectConsultationDate,
-              icon: const Icon(Icons.calendar_month),
-              label: Text(
-                _bookedDate == null
-                    ? 'Choose consultation date'
-                    : 'Consultation: ${_bookedDate!.toLocal().toString().split(' ').first}',
-              ),
-            ),
-          ),
         const SizedBox(height: 24),
         const Text('Review history', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ..._history.map(
+        Wrap(spacing: 12, children: [
+          OutlinedButton.icon(onPressed: _selectHistoryDate,
+            icon: const Icon(Icons.calendar_month),
+            label: Text(_historyDate == null ? 'Filter by date' : 'Date: ${_historyDate!.toString().split(' ').first}')),
+          if (_historyDate != null) TextButton(onPressed: () => setState(() => _historyDate = null), child: const Text('Clear filter')),
+        ]),
+        ..._history.where((item) => _historyDate == null ||
+          (item.createdAt.toLocal().year == _historyDate!.year &&
+           item.createdAt.toLocal().month == _historyDate!.month &&
+           item.createdAt.toLocal().day == _historyDate!.day)).map(
           (item) => ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.circle, size: 12, color: _statusColor(item.status)),

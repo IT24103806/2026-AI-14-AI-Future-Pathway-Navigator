@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { counsellorReviewApi } from '../api/counsellorReviewApi';
+import GapClosureTasks from '../components/GapClosureTasks';
 
 const parseList = (value) => { if (Array.isArray(value)) return value; try { return JSON.parse(value || '[]'); } catch { return []; } };
 const statusCopy = {
@@ -8,6 +9,7 @@ const statusCopy = {
   Approved: ['Approved', 'The counsellor approved this Reality Check result.'],
   Rejected: ['Rejected', 'Review the counsellor feedback before choosing another path.'],
   NeedsRevision: ['Revision requested', 'Update the pathway using the counsellor feedback and run the Reality Check again.'],
+  Failed: ['Reality Check failed', 'This attempt was recorded safely. Return to Career Discovery and try again.'],
 };
 
 export default function StudentRealityCheckPage() {
@@ -36,6 +38,7 @@ export default function StudentRealityCheckPage() {
       <section className="reality-panel"><h2>Missing skills</h2>{missing.length ? <div className="chip-row">{missing.map((x) => <span key={x}>{x}</span>)}</div> : <p>No major prerequisite skill gap was identified.</p>}</section>
       <section className="reality-panel"><h2>Shortest gap-closing plan</h2>{plan.length ? <ol>{plan.map((x) => <li key={x}>{x}</li>)}</ol> : <p className="muted">The plan will appear after the next Reality Check.</p>}</section>
     </div>
+    <GapClosureTasks reviewId={status.id} />
     <section className="reality-panel counsellor-feedback"><h2>👩‍🏫 Counsellor feedback</h2><p>{status.counsellorFeedback || (status.status === 'Pending' ? 'Waiting for an authorized counsellor decision.' : 'No feedback was provided.')}</p></section>
     <section className="reality-panel"><h2>Review history</h2>{history.length === 0 ? <p className="muted">No previous reviews.</p> : <div className="student-history">{history.map((item) => <div key={item.id}><span className={`history-dot ${item.status.toLowerCase()}`} /><div><strong>{item.targetCareer}</strong><small>{new Date(item.createdAt).toLocaleString()}</small></div><b>{item.status}</b></div>)}</div>}</section>
   </div>;
