@@ -6,7 +6,7 @@
 4. In `web/PathwayNavigator`, run `npm ci` and `npm run dev`. Visit `http://localhost:5173`. The API URL is `http://localhost:5081/api`; use HTTP consistently.
 5. Sign in as Student; complete onboarding; use Career Discovery to create a saved analysis; select a recommended career in Agent 4, enter A/L stream, comma-separated grades (A,B,C), budget and skills, then Run Reality Check. Open `/student/reality-check` for result/history. A high-risk result is Pending, a low-risk result is Approved.
 6. Sign in as Counsellor or Admin; open `/counsellor/dashboard`; filter Pending or All; inspect the evidence, add feedback and approve/reject/request revision. Student refreshes status. `/admin/dashboard` links to this approval queue. The default Pending filter intentionally excludes automatically approved records; choose All to see those.
-7. Mobile: `cd mobile/PathwayNavigator && flutter pub get && flutter run`. On Android emulator the API host is `10.0.2.2`, not localhost. The mobile submission screen currently requires the analysis UUID; obtain it from the saved analysis response.
+7. Mobile: `cd mobile/PathwayNavigator && flutter pub get && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5081/api`. On the Android emulator the API host is `10.0.2.2`, not localhost. The Reality Check form is part of the Career Discovery screen and uses the saved analysis id automatically. See `mobile/PathwayNavigator/README.md`.
 
 ## Verified here
 

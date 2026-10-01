@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
-import 'member4_api.dart';
-import 'member4_login_screen.dart';
-import 'pathway_status_screen.dart';
 
-void main() => runApp(const MainApp());
+import 'app/app.dart';
+import 'app/dependencies.dart';
+import 'core/config/app_config.dart';
 
-class MainApp extends StatefulWidget {
-  const MainApp({super.key});
-  @override State<MainApp> createState() => _MainAppState();
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final AppConfig config;
+  try {
+    config = AppConfig.fromEnvironment();
+  } on StateError catch (error) {
+    // Misconfigured build (e.g. HTTP in release): show the problem instead of a blank screen.
+    runApp(_ConfigErrorApp(message: error.message));
+    return;
+  }
+
+  runApp(PathwayNavigatorApp(dependencies: AppDependencies.create(config: config)));
 }
 
-class _MainAppState extends State<MainApp> {
-  final api = Member4Api();
-  late final Future<bool> hasSession = api.token().then((value) => value != null);
-  @override Widget build(BuildContext context) => MaterialApp(
-    title: 'Pathway Navigator', debugShowCheckedModeBanner: false,
-    theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)), useMaterial3: true),
-    home: FutureBuilder<bool>(future: hasSession, builder: (_, snapshot) {
-      if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      return snapshot.data! ? PathwayStatusScreen(api: api) : Member4LoginScreen(api: api);
-    }),
-  );
+class _ConfigErrorApp extends StatelessWidget {
+  const _ConfigErrorApp({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+        home: Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(child: Text('Configuration error\n\n$message', textAlign: TextAlign.center)),
+            ),
+          ),
+        ),
+      );
 }

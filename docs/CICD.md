@@ -58,6 +58,7 @@ Validates the Dart and Flutter widget ecosystem for user-facing applications.
 
 
 * **Test:** Runs automated widget and unit tests for the mobile workflow.
+* **Build:** Builds a debug and a release APK (job `test-flutter-mobile`) so Android/Gradle breakage is caught in CI. See `docs/MOBILE_ARCHITECTURE.md`.
 
 
 
