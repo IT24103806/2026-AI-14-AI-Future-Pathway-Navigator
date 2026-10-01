@@ -1,5 +1,6 @@
 """Agent 4: deterministic feasibility, safety and human-approval gate."""
 
+import re
 from time import perf_counter
 from uuid import uuid4
 
@@ -34,8 +35,55 @@ CAREER_REQUIREMENTS = {
         "entry": ["Prepare a design portfolio", "Demonstrate user-centred design process"],
         "cost": {"Low": "Use portfolio-led short courses and free design tools first.", "Medium": "Compare local design diplomas/degrees.", "High": "Verify private/international programme fees and portfolio support."},
     },
+    "cybersecurity analyst": {
+        "skills": ["Networking", "Linux", "Security", "Python", "Problem Solving"],
+        "degree": "A computing, networking or information-security degree is commonly preferred; recognised security certifications can supplement it.",
+        "subjects": ["Mathematics or ICT foundation", "English/communication"],
+        "entry": ["Meet the selected institution's published entry criteria", "Build hands-on lab evidence (networking, Linux, ethical hacking basics)"],
+        "cost": {"Low": "Start with public/vocational routes and free security labs before paid certifications.", "Medium": "Compare local computing/security degrees and one entry-level certification.", "High": "Verify international programme fees and certification costs."},
+    },
+    "devops engineer": {
+        "skills": ["Cloud", "Linux", "Git", "Networking", "Problem Solving"],
+        "degree": "A computing degree is commonly preferred; cloud-provider certifications and a deployment portfolio are a viable complement.",
+        "subjects": ["Mathematics or ICT foundation", "English/communication"],
+        "entry": ["Meet the selected institution's published entry criteria", "Deploy at least one project through a CI/CD pipeline"],
+        "cost": {"Low": "Use free-tier cloud accounts and open-source tooling while studying a public/vocational route.", "Medium": "Compare local computing programmes and one cloud certification.", "High": "Verify international programme fees and certification costs."},
+    },
+    "mobile app developer": {
+        "skills": ["Dart", "Flutter", "Java", "UI/UX", "Problem Solving"],
+        "degree": "A computing or software-engineering degree is commonly preferred; a published-app portfolio can supplement it.",
+        "subjects": ["Mathematics or equivalent foundation mathematics", "English/communication"],
+        "entry": ["Meet the selected institution's published entry criteria", "Publish or demo at least one working mobile app"],
+        "cost": {"Low": "Use free tooling (Flutter, Android Studio) alongside a public/vocational route.", "Medium": "Compare local software-engineering programmes.", "High": "Verify international programme fees and device/testing costs."},
+    },
+    "game developer": {
+        "skills": ["C++", "C#", "Mathematics", "Problem Solving", "Game Engines"],
+        "degree": "A computing or game-development degree is commonly preferred; a playable portfolio is essential.",
+        "subjects": ["Mathematics", "Computing fundamentals"],
+        "entry": ["Meet the selected institution's published entry criteria", "Build and publish at least one playable prototype"],
+        "cost": {"Low": "Use free engines (Unity/Godot) and a public/vocational computing route.", "Medium": "Compare local computing/game-design programmes.", "High": "Verify international programme fees and hardware costs."},
+    },
+}
+
+# Pathway names produced by Agent 2 (agent_2_pathway_analysis.knowledge_base) that do not contain a
+# catalogue key verbatim are mapped here, so every recommendation can flow into the Reality Check.
+CAREER_ALIASES = {
+    "machine learning engineer": "ai engineer",
+    "ml engineer": "ai engineer",
+    "data analyst": "data scientist",
+    "full-stack": "software engineer",
+    "full stack": "software engineer",
+    "web developer": "software engineer",
+    "cybersecurity": "cybersecurity analyst",
+    "cyber security": "cybersecurity analyst",
+    "cloud engineer": "devops engineer",
+    "cloud / devops": "devops engineer",
+    "ux designer": "ui/ux designer",
 }
 ALLOWED_TOOLS = {"career_prerequisite_lookup"}
+COMPUTING_CAREER_PATTERN = re.compile(
+    r"\bai\b|software|machine learning|data scientist|developer|devops|cyber|cloud", re.IGNORECASE
+)
 
 
 def _record_step(trace, name, started, status="success"):
@@ -54,6 +102,11 @@ def career_prerequisite_lookup(target_career: str):
         if career in normalized:
             requirements, matched = details, career
             break
+    if requirements is None:
+        for alias, career in CAREER_ALIASES.items():
+            if alias in normalized:
+                requirements, matched = CAREER_REQUIREMENTS[career], career
+                break
     return requirements, ToolCallSummary(
         tool_name=tool_name, status="success",
         duration_ms=round((perf_counter() - started) * 1000, 3),
@@ -88,7 +141,7 @@ def evaluate_reality_check(request: RealityCheckRequest) -> RealityCheckResponse
             score -= 20
         if missing_skills:
             score -= min(30, len(missing_skills) * 8)
-        if ("software" in target_lower or "ai" in target_lower) and "arts" in stream_lower:
+        if COMPUTING_CAREER_PATTERN.search(target_lower) and "arts" in stream_lower:
             risk_reasons.append("Stream mismatch: transitioning from Arts to Computing requires an accredited foundation route.")
             score -= 25
         if any(grade in {"S", "F"} for grade in results):

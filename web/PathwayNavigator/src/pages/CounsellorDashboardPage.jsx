@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { counsellorReviewApi } from '../api/counsellorReviewApi';
+import { getApiErrorMessage } from '../utils/apiError';
 
 const parseJson = (value) => { try { return JSON.parse(value || '[]'); } catch { return []; } };
+// Tool-call and execution-trace evidence is persisted exactly as emitted by the AI service
+// (snake_case: tool_name, duration_ms), while the rest of the review DTO is camelCase.
+const pick = (item, snake, camel) => item?.[snake] ?? item?.[camel];
 
 export default function CounsellorDashboardPage() {
   const [result, setResult] = useState({ items: [], totalCount: 0, totalPages: 0 });
@@ -15,7 +19,7 @@ export default function CounsellorDashboardPage() {
   const loadReviews = useCallback(async () => {
     setLoading(true);
     try { setResult(await counsellorReviewApi.getReviews(filters)); }
-    catch (error) { setAlert({ type: 'error', text: error.response?.data?.message || 'Failed to load reviews.' }); }
+    catch (error) { setAlert({ type: 'error', text: getApiErrorMessage(error, 'Failed to load reviews.') }); }
     finally { setLoading(false); }
   }, [filters]);
 
@@ -34,7 +38,7 @@ export default function CounsellorDashboardPage() {
       await counsellorReviewApi.submitDecision(selected.id, decision, feedback.trim());
       setAlert({ type: 'success', text: `Decision recorded: ${decision}. The student status is updated.` });
       setSelected(null); setFeedback(''); await loadReviews();
-    } catch (error) { setAlert({ type: 'error', text: error.response?.data?.message || 'Decision could not be recorded.' }); }
+    } catch (error) { setAlert({ type: 'error', text: getApiErrorMessage(error, 'Decision could not be recorded.') }); }
     finally { setActionLoading(false); }
   };
 
@@ -86,7 +90,7 @@ export default function CounsellorDashboardPage() {
               <h3>Cost guidance</h3><p>{selected.costGuidance || 'Cost evidence requires verification.'}</p>
               <h3>Missing prerequisites</h3><div className="chip-row">{skills.length ? skills.map((s) => <span key={s}>{s}</span>) : <em>No major gap</em>}</div>
               <h3>Shortest gap-closing plan</h3><ol>{gapPlan.map((item) => <li key={item}>{item}</li>)}</ol>
-              <details><summary>Agent 4 audit evidence</summary><h4>Evidence sources</h4><ul>{evidenceSources.map((v) => <li key={v}>{v}</li>)}</ul><h4>Validation</h4><ul>{validations.map((v) => <li key={v}>{v}</li>)}</ul><h4>Controlled tools</h4><ul>{tools.map((t, i) => <li key={`${t.toolName}-${i}`}>{t.toolName}: {t.status} ({t.durationMs} ms)</li>)}</ul><h4>Execution trace</h4><ol>{trace.map((t, i) => <li key={`${t.step}-${i}`}>{t.step}: {t.status} ({t.durationMs} ms)</li>)}</ol></details>
+              <details><summary>Agent 4 audit evidence</summary><h4>Evidence sources</h4><ul>{evidenceSources.map((v) => <li key={v}>{v}</li>)}</ul><h4>Validation</h4><ul>{validations.map((v) => <li key={v}>{v}</li>)}</ul><h4>Controlled tools</h4><ul>{tools.map((t, i) => <li key={`${pick(t, 'tool_name', 'toolName')}-${i}`}>{pick(t, 'tool_name', 'toolName')}: {t.status} ({pick(t, 'duration_ms', 'durationMs')} ms)</li>)}</ul><h4>Execution trace</h4><ol>{trace.map((t, i) => <li key={`${t.step}-${i}`}>{t.step}: {t.status} ({pick(t, 'duration_ms', 'durationMs')} ms)</li>)}</ol></details>
               {selected.status === 'Pending' && <div className="decision-panel"><label htmlFor="feedback">Required counsellor feedback</label><textarea id="feedback" rows="4" maxLength="1000" value={feedback} onChange={(e) => setFeedback(e.target.value)} /><small>{feedback.length}/1000</small><div className="decision-buttons"><button disabled={actionLoading} className="approve" onClick={() => decide('Approved')}>Approve</button><button disabled={actionLoading} className="revise" onClick={() => decide('NeedsRevision')}>Request revision</button><button disabled={actionLoading} className="reject" onClick={() => decide('Rejected')}>Reject</button></div></div>}
             </>}
           </section>

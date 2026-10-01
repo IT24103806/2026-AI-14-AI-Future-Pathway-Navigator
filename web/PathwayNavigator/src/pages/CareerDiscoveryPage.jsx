@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { analyzeCareerPathsApi, approvePathwayAnalysisApi, rejectPathwayAnalysisApi, buildPathwayPlanApi } from '../api/pathwayApi';
 import { counsellorReviewApi } from '../api/counsellorReviewApi';
+import { getApiErrorMessage } from '../utils/apiError';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import PathwayRecommendationCard from '../components/pathway/PathwayRecommendationCard';
@@ -43,7 +44,7 @@ const CareerDiscoveryPage = () => {
       });
       setReviewMessage(`Reality Check saved: ${review.status}. View the result on your Reality Check page.`);
     } catch (error) {
-      setReviewMessage(error.response?.data?.message || 'Reality Check failed. Check the API and AI service, then try again.');
+      setReviewMessage(getApiErrorMessage(error, 'Reality Check failed. Check the API and AI service, then try again.'));
     } finally { setReviewBusy(false); }
   };
 
@@ -65,7 +66,11 @@ const CareerDiscoveryPage = () => {
     setPlanningPathway(pathwayName);
     setErrorMessage('');
     try {
-      setPlannerResult(await buildPathwayPlanApi(pathwayName));
+      const plan = await buildPathwayPlanApi(pathwayName);
+      setPlannerResult(plan);
+      if (plan?.status !== 'ready') {
+        setErrorMessage(`Roadmap could not be built: ${(plan?.validation_errors || []).join(' ') || 'unknown error.'}`);
+      }
     } catch (err) {
       setErrorMessage(err.message || 'Something went wrong while building the roadmap.');
     } finally {

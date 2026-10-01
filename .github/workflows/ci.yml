@@ -60,7 +60,7 @@ jobs:
       run: npm run build
 
   test-agent-4:
-    name: Agent 4 (Python) Tests
+    name: AI Service (Python) Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -70,9 +70,9 @@ jobs:
     - name: Install AI service dependencies
       working-directory: ./ai_service
       run: pip install -r requirements.txt
-    - name: Run deterministic agent evaluation
+    - name: Run AI service tests (agents + .NET contract)
       working-directory: ./ai_service
-      run: pytest -q tests/test_agent_4.py
+      run: pytest -q
 
   test-flutter-member-4:
     name: Flutter Member 4 Tests
