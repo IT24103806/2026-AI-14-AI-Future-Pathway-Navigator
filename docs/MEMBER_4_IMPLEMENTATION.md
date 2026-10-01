@@ -23,7 +23,7 @@
 | Service layer | `CounsellorReviewService.cs`, `AgentService.cs` | async operations, internal AI call, structured validation, transaction, safe failures |
 | PostgreSQL/EF Core | `PathwayReview.cs`, `PathwayReviewAudit.cs`, migration `20260923070000...` | foreign keys, indexes, workflow uniqueness, audit history, timestamps |
 | React | `CounsellorDashboardPage.jsx`, `counsellorReviewApi.js` | protected route, search/filter/sort/pagination, loading/empty/error states, decision validation, AI evidence |
-| Flutter | `member4_api.dart`, `member4_login_screen.dart`, `pathway_status_screen.dart` | secure token storage, API status/history, responsive states, pull-to-refresh, date picker |
+| Flutter | `features/reality_check/` (repository, student + counsellor screens), `features/career_discovery/` (Reality Check form) - see `docs/MOBILE_ARCHITECTURE.md` | secure token storage, API status/history, responsive states, pull-to-refresh, counsellor decision screen |
 | Agentic AI | `agent_4_reality_check/*` | defined contract, distinct validation role, allow-listed tool, deterministic rules, structured trace, approval routing |
 | Tests | Agent 4 pytest, counsellor xUnit, React Vitest, Flutter test | golden case, risk case, prompt injection, ownership, repeated decision, validation and UI/API behaviour |
 
@@ -72,7 +72,7 @@ Example evaluate body:
 3. Start AI service: `cd ai_service && pip install -r requirements.txt && uvicorn main:app --reload`.
 4. Start API: `dotnet run --project backend/PathwayNavigator.Api`.
 5. Start React: `cd web/PathwayNavigator && npm ci && npm run dev`.
-6. Start Flutter with the API URL: `flutter run --dart-define=API_BASE_URL=https://YOUR_API_HOST`.
+6. Start Flutter with the API URL: `flutter run --dart-define=API_BASE_URL=https://YOUR_API_HOST/api` (the value must include `/api`; plain HTTP is accepted only in debug builds).
 
 Tests:
 

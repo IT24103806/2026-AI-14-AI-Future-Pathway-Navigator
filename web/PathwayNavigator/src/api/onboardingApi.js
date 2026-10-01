@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { getApiErrorMessage } from '../utils/apiError';
 import { API_ROUTES } from '../config/constants';
 
 /**
@@ -11,10 +12,7 @@ export const sendAgentChatMessageApi = async (data) => {
     const response = await apiClient.post(API_ROUTES.ONBOARDING_CHAT, data);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to communicate with onboarding agent.');
-    }
-    throw new Error('Network error. Unable to reach authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to communicate with onboarding agent.'));
   }
 };
 
@@ -28,9 +26,6 @@ export const submitStandardOnboardingApi = async (profileData) => {
     const response = await apiClient.post(API_ROUTES.ONBOARDING_STANDARD, profileData);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to save student profile.');
-    }
-    throw new Error('Network error. Unable to reach authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to save student profile.'));
   }
 };

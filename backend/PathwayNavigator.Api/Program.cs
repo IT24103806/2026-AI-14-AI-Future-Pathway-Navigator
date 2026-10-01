@@ -65,7 +65,9 @@ builder.Services.AddHttpClient<IAgentService, AgentService>(client =>
 {
     var baseUrl = builder.Configuration["AiServiceSettings:BaseUrl"] ?? "http://localhost:8000";
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(60);
+    // LLM + market-data calls inside the agents can be slow; keep this below the SPA's 120s axios timeout.
+    var timeoutSeconds = builder.Configuration.GetValue<int?>("AiServiceSettings:TimeoutSeconds") ?? 90;
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
 
 builder.Services.AddScoped<IStudentProfileService, StudentProfileService>();
@@ -84,7 +86,12 @@ app.UseCors("AllowReactApp");
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// In Development the SPA calls the API over plain HTTP (http://localhost:5081). Redirecting to HTTPS
+// would answer CORS pre-flight (OPTIONS) requests with a 307 and the browser would block every call.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // 4. PIPELINE SECURITY: Authentication MUST come before Authorization
 app.UseAuthentication();
@@ -123,6 +130,11 @@ app.MapGet("/weatherforecast", () =>
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<PathwayNavigator.Api.Data.AppDbContext>();
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Database:AutoMigrate", true))
+    {
+        // Saves a manual `dotnet ef database update` on a fresh local database; no-op when up to date.
+        dbContext.Database.Migrate();
+    }
     if (!dbContext.Roles.Any(r => r.Name == "Student"))
     {
         dbContext.Roles.AddRange(

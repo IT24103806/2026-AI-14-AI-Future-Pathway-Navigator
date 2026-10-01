@@ -6,7 +6,9 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  // Agent calls (LLM + market-data lookups) are proxied through the .NET API and can take well
+  // over 10s; the gateway's own AI-service timeout is 90s, so allow a little longer here.
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS) || 120000,
 });
 
 // Request Interceptor: Automatically attach Bearer token if available

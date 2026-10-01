@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { counsellorReviewApi } from '../api/counsellorReviewApi';
+import { getApiErrorMessage } from '../utils/apiError';
 
 const parseList = (value) => { if (Array.isArray(value)) return value; try { return JSON.parse(value || '[]'); } catch { return []; } };
 const statusCopy = {
@@ -16,7 +17,7 @@ export default function StudentRealityCheckPage() {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try { const [latest, past] = await Promise.all([counsellorReviewApi.getMyStatus().catch((err) => { if (err.response?.status === 404) return null; throw err; }), counsellorReviewApi.getMyHistory()]); setHistory(past); setStatus(latest || past[0] || null); }
-    catch (err) { if (err.response?.status === 404) setStatus(null); else setError(err.response?.data?.message || 'Unable to load your Reality Check result.'); }
+    catch (err) { if (err.response?.status === 404) setStatus(null); else setError(getApiErrorMessage(err, 'Unable to load your Reality Check result.')); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);

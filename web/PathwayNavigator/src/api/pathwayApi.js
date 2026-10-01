@@ -1,11 +1,9 @@
 import apiClient from './apiClient';
+import { getApiErrorMessage } from '../utils/apiError';
 import { API_ROUTES } from '../config/constants';
 
 const handleError = (error, fallbackMessage) => {
-  if (error.response) {
-    throw new Error(error.response.data?.message || fallbackMessage);
-  }
-  throw new Error('Network error. Unable to reach the Career Discovery agent.');
+  throw new Error(getApiErrorMessage(error, fallbackMessage));
 };
 
 /**

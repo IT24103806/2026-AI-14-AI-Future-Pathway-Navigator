@@ -34,4 +34,16 @@ describe('CounsellorDashboardPage', () => {
     fireEvent.click(screen.getByText('Approve'));
     await waitFor(() => expect(counsellorReviewApi.submitDecision).toHaveBeenCalledWith('r1', 'Approved', 'Meets requirements after review.'));
   });
+  it('renders tool-call and trace evidence using the AI service snake_case keys', async () => {
+    const withEvidence = {
+      ...review,
+      toolCallsJson: '[{"tool_name":"career_prerequisite_lookup","status":"success","duration_ms":0.4}]',
+      executionTraceJson: '[{"step":"validate_input","status":"success","duration_ms":1.5}]',
+    };
+    counsellorReviewApi.getReviewById.mockResolvedValue(withEvidence);
+    render(<CounsellorDashboardPage />);
+    fireEvent.click(await screen.findByText('AI Engineer'));
+    expect(await screen.findByText('career_prerequisite_lookup: success (0.4 ms)')).toBeInTheDocument();
+    expect(screen.getByText('validate_input: success (1.5 ms)')).toBeInTheDocument();
+  });
 });
