@@ -12,9 +12,7 @@ enum AuthStatus { unknown, authenticated, unauthenticated }
 
 /// App-wide authentication state. The router listens to it to guard routes.
 class AuthController extends ChangeNotifier {
-  AuthController({required AuthRepository repository, required SessionStore sessionStore})
-      : _repository = repository,
-        _sessionStore = sessionStore;
+  AuthController({required this._repository, required this._sessionStore});
 
   final AuthRepository _repository;
   final SessionStore _sessionStore;

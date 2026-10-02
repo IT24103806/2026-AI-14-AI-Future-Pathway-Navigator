@@ -110,7 +110,7 @@ class _OnboardingChatViewState extends State<OnboardingChatView> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _suggestions.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (_, index) => ActionChip(
                 label: Text(_suggestions[index]),
                 onPressed: controller.isTyping ? null : () => _send(controller, _suggestions[index]),

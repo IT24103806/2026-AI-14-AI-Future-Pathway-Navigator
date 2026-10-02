@@ -14,14 +14,12 @@ typedef TokenReader = Future<String?> Function();
 /// failure into an [AppException]. Repositories depend on this class, never on `package:http`.
 class ApiClient {
   ApiClient({
-    required String baseUrl,
-    required TokenReader readToken,
+    required this._baseUrl,
+    required this._readToken,
     http.Client? httpClient,
     this.timeout = const Duration(seconds: 120),
     this.onUnauthorized,
-  })  : _baseUrl = baseUrl,
-        _readToken = readToken,
-        _client = httpClient ?? http.Client();
+  })  : _client = httpClient ?? http.Client();
 
   final String _baseUrl;
   final TokenReader _readToken;
