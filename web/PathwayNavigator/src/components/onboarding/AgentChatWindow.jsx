@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sendAgentChatMessageApi } from '../../api/onboardingApi';
 import AlertBanner from '../common/AlertBanner';
 
-const QUICK_SUGGESTIONS = [
+const QUICK_SUGGESTIONS_FIRST_RUN = [
   '🎓 I am an Undergraduate student at SLIIT',
   '🎓 Just completed my A/Ls',
   '💻 I know Python, JavaScript, and Problem Solving',
@@ -11,14 +11,58 @@ const QUICK_SUGGESTIONS = [
   '🚀 My dream is to become an AI Engineer',
 ];
 
-const INITIAL_GREETING = {
-  role: 'assistant',
-  content: "Hello! 👋 I'm **Pathway Guide**, your AI Career & Onboarding Guide for PathwayNavigator.\n\nI'd love to learn a little about you so we can customize your learning roadmap! To start, could you tell me your **current academic stage**? (e.g. After O/L, After A/L, Undergraduate, or Graduated)",
-  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+const QUICK_SUGGESTIONS_UPDATE = [
+  '🙋 My name is …',
+  '🎓 I am a graduate now',
+  '💻 Please add Docker to my skills',
+  '🎨 I have started learning UI/UX design',
+  '🚀 I want to become a Data Scientist',
+];
+
+const buildGreeting = (isUpdateMode, savedProfile) => {
+  if (!isUpdateMode) {
+    return {
+      role: 'assistant',
+      content:
+        "Hello! 👋 I'm **Pathway Guide**, your AI Career & Onboarding Guide for PathwayNavigator.\n\n" +
+        "I'd love to learn a little about you so we can customize your learning roadmap! To start, " +
+        'could you tell me your **current academic stage**? (e.g. After O/L, After A/L, Undergraduate, or Graduated)',
+    };
+  }
+
+  const known = [
+    savedProfile?.fullName ? `• **Name:** ${savedProfile.fullName}` : null,
+    savedProfile?.academicStage ? `• **Academic Stage:** ${savedProfile.academicStage}` : null,
+    savedProfile?.coreSkills?.length ? `• **Core Skills:** ${savedProfile.coreSkills.join(', ')}` : null,
+    savedProfile?.hobbiesInterests?.length ? `• **Interests:** ${savedProfile.hobbiesInterests.join(', ')}` : null,
+    savedProfile?.careerAmbitions ? `• **Career Ambition:** ${savedProfile.careerAmbitions}` : null,
+  ].filter(Boolean);
+
+  const intro = known.length
+    ? `Welcome back! 👋 Here is the profile I have on file for you:\n\n${known.join('\n')}\n\n`
+    : "Welcome back! 👋 I don't have a saved profile for you yet, so we'll start fresh.\n\n";
+
+  return {
+    role: 'assistant',
+    content:
+      `${intro}Tell me what you would like to **update** — your name, academic stage, skills, ` +
+      'interests or career ambition — and I will save the change for you. Nothing changes until you say so.',
+  };
 };
 
-const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
-  const [messages, setMessages] = useState([INITIAL_GREETING]);
+const AgentChatWindow = ({
+  onSlotsUpdate,
+  currentSlots,
+  baselineSlots,
+  savedProfile,
+  mode = 'create',
+}) => {
+  const isUpdateMode = mode === 'update';
+  const quickSuggestions = isUpdateMode ? QUICK_SUGGESTIONS_UPDATE : QUICK_SUGGESTIONS_FIRST_RUN;
+
+  const [messages, setMessages] = useState([
+    { ...buildGreeting(isUpdateMode, savedProfile), timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+  ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -77,6 +121,10 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
         message: text,
         history,
         current_slots: currentSlots,
+        // Update sessions compare against the saved profile, so the agent only finishes once
+        // something has actually changed.
+        baseline_slots: baselineSlots || currentSlots,
+        update_mode: isUpdateMode,
       });
 
       const assistantMessage = {
@@ -122,7 +170,9 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
           </div>
         </div>
         {isComplete && (
-          <span className="complete-badge">🎉 Onboarding Completed!</span>
+          <span className="complete-badge">
+            {isUpdateMode ? '✅ Profile Updated!' : '🎉 Onboarding Completed!'}
+          </span>
         )}
       </div>
 
@@ -171,9 +221,12 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
         {isComplete && (
           <div className="celebration-card">
             <div className="celebration-icon">🚀</div>
-            <h3>All Profile Data Collected!</h3>
+            <h3>{isUpdateMode ? 'Profile Updated!' : 'All Profile Data Collected!'}</h3>
             <p>
-              Your student profile is saved. Redirecting to your personalized AI dashboard in <strong>{countdown}s</strong>...
+              {isUpdateMode
+                ? 'Your saved details and pathway recommendations now reflect these changes.'
+                : 'Your student profile is saved.'}{' '}
+              Redirecting to your personalized AI dashboard in <strong>{countdown}s</strong>...
             </p>
             <button
               className="btn btn-sm btn-primary mt-2"
@@ -192,12 +245,22 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
         <div className="quick-suggestions-bar">
           <span className="suggestions-label">💡 Suggestions:</span>
           <div className="suggestions-chips-scroll">
-            {QUICK_SUGGESTIONS.map((chip, idx) => (
+            {quickSuggestions.map((chip, idx) => (
               <button
                 key={idx}
                 type="button"
                 className="suggestion-chip"
-                onClick={() => handleSendMessage(chip.replace(/^[^\s]+ /, ''))}
+                // Chips ending in "…" need the student to complete them, so they pre-fill the
+                // input box instead of being sent as-is.
+                onClick={() => {
+                  const text = chip.replace(/^[^\s]+ /, '');
+                  if (chip.endsWith('…')) {
+                    setInputMessage(`${text} `);
+                    inputRef.current?.focus();
+                  } else {
+                    handleSendMessage(text);
+                  }
+                }}
                 disabled={isTyping}
               >
                 {chip}
@@ -214,7 +277,7 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isComplete ? "Onboarding completed!" : "Type your message here... (Press Enter to send)"}
+          placeholder={isComplete ? 'Profile saved!' : 'Type your message here... (Press Enter to send)'}
           disabled={isTyping || isComplete}
           rows={1}
           className="chat-textarea"

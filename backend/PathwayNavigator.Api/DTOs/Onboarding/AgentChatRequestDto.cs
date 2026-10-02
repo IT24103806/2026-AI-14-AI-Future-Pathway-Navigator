@@ -15,6 +15,9 @@ namespace PathwayNavigator.Api.DTOs.Onboarding
 
     public class ExtractedSlotsDto
     {
+        [JsonPropertyName("full_name")]
+        public string? FullName { get; set; }
+
         [JsonPropertyName("academic_stage")]
         public string? AcademicStage { get; set; }
 
@@ -39,5 +42,16 @@ namespace PathwayNavigator.Api.DTOs.Onboarding
 
         [JsonPropertyName("current_slots")]
         public ExtractedSlotsDto? CurrentSlots { get; set; }
+
+        /// <summary>
+        /// Profile as it is stored right now. Sent while the student is revisiting an existing
+        /// profile so the agent can tell a real change from "nothing was updated yet".
+        /// </summary>
+        [JsonPropertyName("baseline_slots")]
+        public ExtractedSlotsDto? BaselineSlots { get; set; }
+
+        /// <summary>True for a profile update session ("Re-run AI onboarding"), false for first-time onboarding.</summary>
+        [JsonPropertyName("update_mode")]
+        public bool UpdateMode { get; set; }
     }
 }

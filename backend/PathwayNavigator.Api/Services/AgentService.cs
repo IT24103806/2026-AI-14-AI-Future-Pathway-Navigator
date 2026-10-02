@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,6 +17,15 @@ namespace PathwayNavigator.Api.Services
 {
     public class AgentService : IAgentService
     {
+        /// <summary>
+        /// Matches explicit self-introductions only ("My name is Nimal Perera", "call me Nimal").
+        /// The capital-letter requirement keeps phrases like "I am an undergraduate" from being
+        /// mistaken for a name.
+        /// </summary>
+        private static readonly Regex NameStatementPattern = new(
+            @"\b(?:my\s+name\s+is|call\s+me|i\s+am|i'm)\s+((?-i:[A-Z])[a-zA-Z'’\-]+(?:\s+(?-i:[A-Z])[a-zA-Z'’\-]+){0,3})",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AgentService> _logger;
@@ -40,7 +52,9 @@ namespace PathwayNavigator.Api.Services
                     user_id = userId,
                     message = request.Message,
                     history = request.History,
-                    current_slots = request.CurrentSlots
+                    current_slots = request.CurrentSlots,
+                    baseline_slots = request.BaselineSlots,
+                    update_mode = request.UpdateMode
                 };
 
                 var response = await _httpClient.PostAsJsonAsync("/api/v1/agent-1/chat", payload);
@@ -51,7 +65,11 @@ namespace PathwayNavigator.Api.Services
                     {
                         PropertyNameCaseInsensitive = true
                     });
-                    return result;
+
+                    if (result != null)
+                    {
+                        return ApplyUpdateModeGuard(request, result);
+                    }
                 }
 
                 var errorText = await response.Content.ReadAsStringAsync();
@@ -65,6 +83,57 @@ namespace PathwayNavigator.Api.Services
             // Fallback response if AI service is temporarily offline during development
             return GenerateFallbackTurn(request);
         }
+
+        /// <summary>
+        /// Keeps "Re-run AI onboarding" meaningful regardless of how the agent answered: while the
+        /// student is revising an existing profile, the turn only counts as finished once at least
+        /// one detail actually differs from the stored profile. Without this, a chat that starts
+        /// from the saved slots would "complete" on the first message and save nothing new.
+        /// </summary>
+        private static AgentChatResponseDto ApplyUpdateModeGuard(AgentChatRequestDto request, AgentChatResponseDto response)
+        {
+            if (!request.UpdateMode || !response.IsComplete)
+            {
+                return response;
+            }
+
+            if (SlotsDiffer(request.BaselineSlots, response.ExtractedSlots))
+            {
+                return response;
+            }
+
+            response.IsComplete = false;
+            response.IsSaved = false;
+            response.ReplyMessage =
+                "I already have your saved profile loaded and nothing has changed yet. " +
+                "Tell me what you'd like to update — your name, academic stage, skills, interests or career ambition?";
+            return response;
+        }
+
+        /// <summary>True when the freshly extracted slots differ from the stored profile in any field.</summary>
+        private static bool SlotsDiffer(ExtractedSlotsDto? baseline, ExtractedSlotsDto? current)
+        {
+            if (baseline == null || current == null)
+            {
+                return true;
+            }
+
+            return !SameText(baseline.FullName, current.FullName)
+                || !SameText(baseline.AcademicStage, current.AcademicStage)
+                || !SameText(baseline.CareerAmbitions, current.CareerAmbitions)
+                || !SameSet(baseline.CoreSkills, current.CoreSkills)
+                || !SameSet(baseline.HobbiesInterests, current.HobbiesInterests);
+        }
+
+        private static bool SameText(string? left, string? right) =>
+            string.Equals((left ?? string.Empty).Trim(), (right ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase);
+
+        private static bool SameSet(List<string>? left, List<string>? right) =>
+            new HashSet<string>(
+                (left ?? new List<string>()).Select(value => value.Trim()),
+                StringComparer.OrdinalIgnoreCase)
+            .SetEquals(
+                (right ?? new List<string>()).Select(value => value.Trim()));
 
         public async Task<PathwayAnalysisResponseDto?> ProcessAgent2AnalysisAsync(StudentProfileDto profile, string? userId = null)
         {
@@ -168,6 +237,13 @@ namespace PathwayNavigator.Api.Services
             var slots = request.CurrentSlots ?? new ExtractedSlotsDto();
             var text = request.Message.ToLower();
 
+            // Name: only obvious "my name is ..." / "call me ..." statements, never a guess.
+            var nameMatch = NameStatementPattern.Match(request.Message);
+            if (nameMatch.Success)
+            {
+                slots.FullName = nameMatch.Groups[1].Value.Trim();
+            }
+
             if (text.Contains("o/l")) slots.AcademicStage = "After O/L";
             else if (text.Contains("a/l")) slots.AcademicStage = "After A/L";
             else if (text.Contains("undergraduate") || text.Contains("bachelor") || text.Contains("sliit")) slots.AcademicStage = "Undergraduate";
@@ -192,9 +268,26 @@ namespace PathwayNavigator.Api.Services
             if (string.IsNullOrEmpty(slots.CareerAmbitions)) missing.Add("Career Ambitions");
 
             bool isComplete = missing.Count == 0;
-            string reply = isComplete
-                ? "Wonderful! I have collected all your details and your personalized pathway is ready!"
-                : $"Great! Please also tell me about your {missing[0]}.";
+            bool nothingChangedYet = request.UpdateMode && !SlotsDiffer(request.BaselineSlots, slots);
+
+            string reply;
+            if (isComplete && nothingChangedYet)
+            {
+                // Update session where the student has not changed anything (yet).
+                isComplete = false;
+                reply = "I have your saved profile loaded — tell me what you'd like to update " +
+                        "(name, academic stage, skills, interests or career ambition) and I'll apply it.";
+            }
+            else if (isComplete)
+            {
+                reply = request.UpdateMode
+                    ? "Thanks! I have updated your profile with the new details."
+                    : "Wonderful! I have collected all your details and your personalized pathway is ready!";
+            }
+            else
+            {
+                reply = $"Great! Please also tell me about your {missing[0]}.";
+            }
 
             return new AgentChatResponseDto
             {

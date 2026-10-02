@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PathwayNavigator.Api.DTOs.Onboarding;
 using PathwayNavigator.Api.DTOs.Profile;
 using PathwayNavigator.Api.Services;
 
@@ -66,13 +66,16 @@ namespace PathwayNavigator.Api.Controllers
         }
 
         /// <summary>
-        /// Updates the student's profile information.
+        /// Updates the student's personal details (full name, academic stage, skills, interests,
+        /// ambitions, A/L context). Only the fields present in the payload are changed, so the
+        /// "Re-run AI onboarding" flow and the profile editor can send partial updates.
         /// </summary>
         [HttpPut]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StudentProfileDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> UpdateProfile([FromBody] CompleteOnboardingDto request)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateStudentProfileDto request)
         {
             if (!ModelState.IsValid)
             {
@@ -80,8 +83,16 @@ namespace PathwayNavigator.Api.Controllers
             }
 
             var userId = GetCurrentUserId();
-            var profile = await _profileService.SaveOrUpdateProfileAsync(userId, request);
-            return Ok(profile);
+
+            try
+            {
+                var profile = await _profileService.UpdateProfileAsync(userId, request);
+                return Ok(profile);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
     }
 }

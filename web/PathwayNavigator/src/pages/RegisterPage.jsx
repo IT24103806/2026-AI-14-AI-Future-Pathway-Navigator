@@ -7,6 +7,7 @@ import AlertBanner from '../components/common/AlertBanner';
 import GoogleSignInButton from '../components/common/GoogleSignInButton';
 import AuthLayout from '../components/common/AuthLayout';
 import { ROLES } from '../config/constants';
+import { isGoogleSignInEnabled } from '../config/features';
 import { dashboardPathForRole } from '../utils/roleRoutes';
 
 const RegisterPage = () => {
@@ -112,19 +113,23 @@ const RegisterPage = () => {
         onClose={() => setApiError('')}
       />
 
-      {/* Google Authentication */}
-      <div className="google-auth-section">
-        <GoogleSignInButton
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          disabled={isSubmitting}
-          text="signup_with"
-        />
-      </div>
+      {/* Google Authentication (hidden while VITE_GOOGLE_CLIENT_ID is not configured) */}
+      {isGoogleSignInEnabled && (
+        <>
+          <div className="google-auth-section">
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              disabled={isSubmitting}
+              text="signup_with"
+            />
+          </div>
 
-      <div className="auth-divider">
-        <span>or register with email</span>
-      </div>
+          <div className="auth-divider">
+            <span>or register with email</span>
+          </div>
+        </>
+      )}
 
       <form onSubmit={handleSubmit} noValidate className="auth-form">
         <FormInput

@@ -1,6 +1,7 @@
 import React from 'react';
 
-const SlotProgressSidebar = ({ slots }) => {
+const SlotProgressSidebar = ({ slots, isUpdateMode = false }) => {
+  const fullName = slots?.full_name;
   const academicStage = slots?.academic_stage;
   const coreSkills = slots?.core_skills || [];
   const hobbiesInterests = slots?.hobbies_interests || [];
@@ -28,10 +29,24 @@ const SlotProgressSidebar = ({ slots }) => {
       </div>
 
       <p className="slot-sidebar-subtitle">
-        Agent 1 is dynamically extracting your profile details as you chat.
+        {isUpdateMode
+          ? 'Your saved details are loaded. Agent 1 updates them here as you chat.'
+          : 'Agent 1 is dynamically extracting your profile details as you chat.'}
       </p>
 
       <div className="slot-items-list">
+        {/* Name (only shown once Agent 1 knows it) */}
+        {fullName && (
+          <div className="slot-card slot-completed">
+            <div className="slot-card-header">
+              <span className="slot-icon">🙋</span>
+              <span className="slot-title">Name</span>
+              <span className="slot-status-icon">✓</span>
+            </div>
+            <div className="slot-tag-badge">{fullName}</div>
+          </div>
+        )}
+
         {/* Slot 1: Academic Stage */}
         <div className={`slot-card ${academicStage ? 'slot-completed' : 'slot-pending'}`}>
           <div className="slot-card-header">

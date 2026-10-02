@@ -2,6 +2,10 @@ from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
 class ExtractedProfileSlots(BaseModel):
+    full_name: Optional[str] = Field(
+        default=None,
+        description="Student's display name, only when stated explicitly (e.g. 'Nimal Perera'). Never guess it."
+    )
     academic_stage: Optional[str] = Field(
         default=None,
         description="Academic background (e.g. 'After O/L', 'After A/L', 'Undergraduate', 'Graduate', 'Other')"
@@ -28,6 +32,14 @@ class Agent1ChatRequest(BaseModel):
     message: str = Field(..., description="Current user input text")
     history: List[ChatMessage] = Field(default_factory=list, description="Previous conversational history")
     current_slots: Optional[ExtractedProfileSlots] = Field(default=None, description="Slots already extracted in prior turns")
+    baseline_slots: Optional[ExtractedProfileSlots] = Field(
+        default=None,
+        description="Profile as stored before this session; lets update sessions detect real changes"
+    )
+    update_mode: bool = Field(
+        default=False,
+        description="True when the student is revisiting an existing profile to refresh it"
+    )
 
 class Agent1ChatResponse(BaseModel):
     reply_message: str = Field(..., description="Agent 1's conversational response")

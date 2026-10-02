@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PathwayNavigator.Api.Data;
+using PathwayNavigator.Api.Middleware;
 using PathwayNavigator.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,11 +42,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 2. Configure PostgreSQL Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? "Host=localhost;Port=5432;Database=PathwayNavigatorDb;Username=postgres;Password=postgres"));
+// 2. Configure PostgreSQL Database.
+//    Resilient against the dropped idle connections of managed providers (Aiven, Neon, ...):
+//    pool recycling + automatic retries for transient failures. See DatabaseConfiguration.
+builder.Services.AddResilientPostgres(builder.Configuration);
 
 // 3. SECURITY FIRST: Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -93,7 +93,15 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Register Member 4 Review Service
 builder.Services.AddScoped<ICounsellorReviewService, CounsellorReviewService>();
 
+// Keeps a PostgreSQL connection warm so the first request after an idle period is not the one
+// that discovers the server has already closed the pooled connection.
+builder.Services.AddHostedService<DatabaseKeepAliveHostedService>();
+
 var app = builder.Build();
+
+// FIRST middleware: turn unhandled exceptions into JSON (no .NET stack traces in the SPA) and
+// report transient database drops as 503 instead of an opaque 500.
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 // Enable CORS
 app.UseCors("AllowReactApp");
@@ -142,23 +150,38 @@ app.MapGet("/weatherforecast", () =>
 
 
 
-// Auto-seed default roles if missing
+// Auto-seed default roles if missing.
+// A cloud database can be briefly unreachable (or still waking up) while the API boots, so a
+// failure here must not stop the application: requests retry transient errors on their own.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<PathwayNavigator.Api.Data.AppDbContext>();
-    if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Database:AutoMigrate", true))
+    var startupLogger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("PathwayNavigator.Startup");
+
+    try
     {
-        // Saves a manual `dotnet ef database update` on a fresh local database; no-op when up to date.
-        dbContext.Database.Migrate();
+        if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Database:AutoMigrate", true))
+        {
+            // Saves a manual `dotnet ef database update` on a fresh local database; no-op when up to date.
+            dbContext.Database.Migrate();
+        }
+        if (!dbContext.Roles.Any(r => r.Name == "Student"))
+        {
+            dbContext.Roles.AddRange(
+                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Student", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Counsellor", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Admin", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            );
+            dbContext.SaveChanges();
+        }
     }
-    if (!dbContext.Roles.Any(r => r.Name == "Student"))
+    catch (Exception ex)
     {
-        dbContext.Roles.AddRange(
-            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Student", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Counsellor", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Admin", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
-        );
-        dbContext.SaveChanges();
+        startupLogger.LogError(
+            ex,
+            "Database preparation failed during startup. The API will keep running; requests retry transient failures automatically.");
     }
 }
 

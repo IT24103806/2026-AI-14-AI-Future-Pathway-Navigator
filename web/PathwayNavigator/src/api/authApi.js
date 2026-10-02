@@ -27,10 +27,15 @@ export const registerApi = async (userData) => {
  */
 export const loginApi = async (credentials) => {
   try {
-    const response = await apiClient.post(API_ROUTES.LOGIN, {
-      email: credentials.email,
-      password: credentials.password,
-    });
+    const response = await apiClient.post(
+      API_ROUTES.LOGIN,
+      {
+        email: credentials.email,
+        password: credentials.password,
+      },
+      // Sign-in changes nothing on the server, so it is safe to repeat if the API hiccups.
+      { retryOnTransient: true }
+    );
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Invalid email or password.'));
@@ -44,9 +49,13 @@ export const loginApi = async (credentials) => {
  */
 export const googleLoginApi = async (idToken) => {
   try {
-    const response = await apiClient.post(API_ROUTES.GOOGLE, {
-      idToken,
-    });
+    const response = await apiClient.post(
+      API_ROUTES.GOOGLE,
+      {
+        idToken,
+      },
+      { retryOnTransient: true }
+    );
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Google authentication failed. Please try again.'));
@@ -77,10 +86,15 @@ export const forgotPasswordApi = async (email) => {
  */
 export const verifyResetCodeApi = async (email, code) => {
   try {
-    const response = await apiClient.post(API_ROUTES.VERIFY_RESET_CODE, {
-      email,
-      code,
-    });
+    const response = await apiClient.post(
+      API_ROUTES.VERIFY_RESET_CODE,
+      {
+        email,
+        code,
+      },
+      // Pure validation: repeating it cannot consume the code or send anything.
+      { retryOnTransient: true }
+    );
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Invalid or expired verification code.'));

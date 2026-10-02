@@ -1,16 +1,33 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { googleClientId, isGoogleSignInEnabled } from '../../config/features';
+
+// Logged at most once per page load instead of on every render/mount of the auth screen.
+let hasWarnedAboutMissingClientId = false;
 
 const GoogleSignInButton = ({ onSuccess, onError, disabled = false, text = 'signin_with' }) => {
   const buttonRef = useRef(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [scriptError, setScriptError] = useState(false);
 
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  // The parent passes inline arrow functions, which change on every render. Keeping them in refs
+  // stops Google's button from being re-initialised (and re-rendered) on each keystroke.
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
-    // Check if client ID is configured
-    if (!clientId) {
-      console.warn('VITE_GOOGLE_CLIENT_ID is not configured in .env file.');
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
+
+  useEffect(() => {
+    if (!isGoogleSignInEnabled) {
+      if (!hasWarnedAboutMissingClientId) {
+        hasWarnedAboutMissingClientId = true;
+        console.warn(
+          'VITE_GOOGLE_CLIENT_ID is not configured - the Google Sign-In button is hidden. ' +
+            'Add it to web/PathwayNavigator/.env.local to enable it (see .env.example).'
+        );
+      }
       return;
     }
 
@@ -40,21 +57,21 @@ const GoogleSignInButton = ({ onSuccess, onError, disabled = false, text = 'sign
       setScriptError(true);
     };
     document.body.appendChild(script);
-  }, [clientId]);
+  }, []);
 
   useEffect(() => {
-    if (!isScriptLoaded || !window.google?.accounts?.id || !buttonRef.current || !clientId) {
+    if (!isScriptLoaded || !window.google?.accounts?.id || !buttonRef.current || !isGoogleSignInEnabled) {
       return;
     }
 
     try {
       window.google.accounts.id.initialize({
-        client_id: clientId,
+        client_id: googleClientId,
         callback: (response) => {
           if (response?.credential) {
-            onSuccess(response.credential);
+            onSuccessRef.current?.(response.credential);
           } else {
-            onError?.(new Error('No credentials received from Google.'));
+            onErrorRef.current?.(new Error('No credentials received from Google.'));
           }
         },
         auto_select: false,
@@ -74,9 +91,9 @@ const GoogleSignInButton = ({ onSuccess, onError, disabled = false, text = 'sign
     } catch (err) {
       console.error('Error initializing Google Sign-In button:', err);
     }
-  }, [isScriptLoaded, clientId, text, onSuccess, onError]);
+  }, [isScriptLoaded, text]);
 
-  if (!clientId || scriptError) {
+  if (!isGoogleSignInEnabled || scriptError) {
     return null;
   }
 

@@ -30,8 +30,12 @@ namespace PathwayNavigator.Api.Services
 
         public async Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto request)
         {
+            // Normalised once and reused, so " user@x.com " cannot slip past the duplicate check
+            // and then be stored trimmed.
+            var normalizedEmail = request.Email.ToLower().Trim();
+
             // 1. Check if user already exists
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email.ToLower()))
+            if (await _context.Users.AnyAsync(u => u.Email == normalizedEmail))
             {
                 return null; // Signals duplicate user conflict
             }
@@ -55,7 +59,7 @@ namespace PathwayNavigator.Api.Services
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                Email = request.Email.ToLower().Trim(),
+                Email = normalizedEmail,
                 PasswordHash = passwordHash,
                 AuthProvider = "Local",
                 RoleId = role.Id,
@@ -74,10 +78,14 @@ namespace PathwayNavigator.Api.Services
 
         public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)
         {
+            // Normalised the same way as registration, otherwise a stray leading/trailing space
+            // (mobile keyboards and copy-paste add them) turns a valid login into a 401.
+            var normalizedEmail = request.Email.ToLower().Trim();
+
             // 1. Find user by email including Role navigation property
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
 
             if (user == null || !user.IsActive || string.IsNullOrEmpty(user.PasswordHash))
             {
