@@ -5,6 +5,7 @@ import { getProfileStatusApi } from '../api/profileApi';
 import AgentChatWindow from '../components/onboarding/AgentChatWindow';
 import SlotProgressSidebar from '../components/onboarding/SlotProgressSidebar';
 import StandardOnboardingForm from '../components/onboarding/StandardOnboardingForm';
+import JourneySteps from '../components/common/JourneySteps';
 
 const OnboardingPage = () => {
   const [mode, setMode] = useState('chat'); // 'chat' or 'form'
@@ -57,12 +58,17 @@ const OnboardingPage = () => {
     <div className="onboarding-page-container">
       {/* Onboarding Header Banner */}
       <div className="onboarding-hero">
+        <div className="orb-field" aria-hidden="true">
+          <span className="orb orb--cyan" style={{ width: 220, height: 220, top: -70, left: '6%' }} />
+          <span className="orb orb--violet" style={{ width: 240, height: 240, bottom: -100, right: '4%' }} />
+        </div>
         <div className="onboarding-hero-content">
           <span className="hero-pill-badge">✨ Step 1: Student Onboarding</span>
           <h1>Welcome to PathwayNavigator, {user?.fullName || user?.email?.split('@')[0]}!</h1>
           <p>
             Let's personalize your career pathways and learning roadmap. Choose how you'd like to set up your profile:
           </p>
+          <JourneySteps current={1} className="mt-4" />
 
           {/* Mode Switcher Tabs */}
           <div className="onboarding-mode-switcher">

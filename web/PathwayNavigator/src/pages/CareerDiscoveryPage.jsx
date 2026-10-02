@@ -16,6 +16,8 @@ import { getApiErrorMessage } from '../utils/apiError';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import PathwayRecommendationCard from '../components/pathway/PathwayRecommendationCard';
+import JourneySteps from '../components/common/JourneySteps';
+import Reveal from '../components/common/Reveal';
 
 const parseJsonList = (value) => {
   if (Array.isArray(value)) return value;
@@ -244,18 +246,25 @@ const CareerDiscoveryPage = () => {
   return (
     <div className="career-page-container">
       <div className="onboarding-hero">
-        <span className="hero-pill-badge">✨ Step 2: Career Discovery</span>
-        <h1>Discover Your Career Pathways</h1>
-        <p>
-          Agent 2 (Career Discovery) analyzes your saved profile against real career data to surface your
-          top 3 ranked pathways — Path A, B, and C — each explained and market-checked.
-        </p>
+        <div className="orb-field" aria-hidden="true">
+          <span className="orb orb--cyan" style={{ width: 220, height: 220, top: -80, left: '8%' }} />
+          <span className="orb orb--violet" style={{ width: 240, height: 240, bottom: -110, right: '6%' }} />
+        </div>
+        <div className="onboarding-hero-content">
+          <span className="hero-pill-badge">✨ Step 2: Career Discovery</span>
+          <h1>Discover Your Career Pathways</h1>
+          <p>
+            Agent 2 (Career Discovery) analyzes your saved profile against real career data to surface your
+            top 3 ranked pathways — Path A, B, and C — each explained and market-checked.
+          </p>
+          <JourneySteps current={2} className="mt-4" />
 
-        {!isLoading && !isInitialLoading && (
-          <PrimaryButton onClick={handleAnalyze} isLoading={isLoading} className="hero-cta-btn">
-            {hasRun ? '🔄 Re-run Career Discovery' : '🔮 Discover My Pathways'}
-          </PrimaryButton>
-        )}
+          {!isLoading && !isInitialLoading && (
+            <PrimaryButton onClick={handleAnalyze} isLoading={isLoading} className="hero-cta-btn">
+              {hasRun ? '🔄 Re-run Career Discovery' : '🔮 Discover My Pathways'}
+            </PrimaryButton>
+          )}
+        </div>
       </div>
 
       <AlertBanner type="error" message={errorMessage} onClose={() => setErrorMessage('')} />
@@ -281,9 +290,30 @@ const CareerDiscoveryPage = () => {
               ? 'Checking PostgreSQL for your latest Agent 2 analysis and Agent 3 roadmap'
               : 'Matching skills → fetching job-market signals → generating explanations → validating results'}
           </p>
+
+          {!isInitialLoading && (
+            <ul className="analysis-steps" aria-hidden="true">
+              {[
+                'Matching skills to the career knowledge base',
+                'Fetching job-market demand & competition signals',
+                'Generating explanations and validating results',
+              ].map((label, index) => (
+                <li className="analysis-step" key={label} style={{ animationDelay: `${index * 0.9}s` }}>
+                  <span className="analysis-step__dot" />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
+      {!isLoading && !isInitialLoading && !hasRun && (
+        <Reveal className="section-head" variant="up">
+          <span className="eyebrow">Before you begin</span>
+          <h2>How Agent 2 builds your shortlist</h2>
+        </Reveal>
+      )}
       {!isLoading && !isInitialLoading && !hasRun && (
         <div className="how-it-works-grid">
           {HOW_IT_WORKS.map((step, idx) => (

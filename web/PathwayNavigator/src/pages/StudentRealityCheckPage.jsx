@@ -4,6 +4,7 @@ import { counsellorReviewApi } from '../api/counsellorReviewApi';
 import { getStudentProfileApi } from '../api/profileApi';
 import { getLatestPathwayAnalysisApi } from '../api/pathwayApi';
 import { getApiErrorMessage } from '../utils/apiError';
+import JourneySteps from '../components/common/JourneySteps';
 
 const parseList = (value) => {
   if (Array.isArray(value)) return value;
@@ -222,6 +223,7 @@ export default function StudentRealityCheckPage() {
           <p>
             Workflow <code>{status.workflowId}</code>
           </p>
+          <JourneySteps current={3} className="mt-2" />
         </div>
         <div className="student-reality-header-actions">
           {canResubmit && !showRevisionForm && (
