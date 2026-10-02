@@ -36,6 +36,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secret = jwtSettings["Secret"]
     ?? throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+if (secret.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase) || secret.Length < 32)
+    throw new InvalidOperationException("Configure JwtSettings__Secret with a private key of at least 32 characters.");
 var secretKey = Encoding.UTF8.GetBytes(secret);
 
 builder.Services.AddAuthentication(options =>
@@ -74,6 +76,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 // Register Member 4 Review Service
 builder.Services.AddScoped<ICounsellorReviewService, CounsellorReviewService>();
+builder.Services.AddScoped<IGapClosureTaskService, GapClosureTaskService>();
 
 var app = builder.Build();
 

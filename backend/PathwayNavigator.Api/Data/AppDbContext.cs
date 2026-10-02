@@ -15,6 +15,7 @@ namespace PathwayNavigator.Api.Data
 
         public DbSet<PathwayReview> PathwayReviews { get; set; }
         public DbSet<PathwayReviewAudit> PathwayReviewAudits { get; set; }
+        public DbSet<GapClosureTask> GapClosureTasks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -93,6 +94,18 @@ namespace PathwayNavigator.Api.Data
                 .WithOne(a => a.PathwayReview)
                 .HasForeignKey(a => a.PathwayReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<GapClosureTask>()
+                .HasIndex(t => new { t.StudentId, t.PathwayReviewId });
+            modelBuilder.Entity<GapClosureTask>()
+                .HasOne(t => t.PathwayReview)
+                .WithMany()
+                .HasForeignKey(t => t.PathwayReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<GapClosureTask>()
+                .HasOne(t => t.Student)
+                .WithMany()
+                .HasForeignKey(t => t.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

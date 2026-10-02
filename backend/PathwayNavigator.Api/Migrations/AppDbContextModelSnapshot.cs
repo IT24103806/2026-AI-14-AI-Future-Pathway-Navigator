@@ -62,6 +62,22 @@ namespace PathwayNavigator.Api.Migrations
                     b.ToTable("PathwayAnalyses");
                 });
 
+            modelBuilder.Entity("PathwayNavigator.Api.Models.GapClosureTask", b =>
+                {
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("DueDate").HasColumnType("timestamp with time zone");
+                    b.Property<Guid>("PathwayReviewId").HasColumnType("uuid");
+                    b.Property<string>("Status").IsRequired().HasMaxLength(20).HasColumnType("character varying(20)");
+                    b.Property<Guid>("StudentId").HasColumnType("uuid");
+                    b.Property<string>("Title").IsRequired().HasMaxLength(160).HasColumnType("character varying(160)");
+                    b.Property<DateTime>("UpdatedAt").HasColumnType("timestamp with time zone");
+                    b.HasKey("Id");
+                    b.HasIndex("PathwayReviewId");
+                    b.HasIndex("StudentId", "PathwayReviewId");
+                    b.ToTable("GapClosureTasks");
+                });
+
             modelBuilder.Entity("PathwayNavigator.Api.Models.PathwayReview", b =>
                 {
                     b.Property<Guid>("Id")
@@ -309,6 +325,16 @@ namespace PathwayNavigator.Api.Migrations
                     b.Navigation("ApprovedByUser");
 
                     b.Navigation("StudentProfile");
+                });
+
+            modelBuilder.Entity("PathwayNavigator.Api.Models.GapClosureTask", b =>
+                {
+                    b.HasOne("PathwayNavigator.Api.Models.PathwayReview", "PathwayReview")
+                        .WithMany().HasForeignKey("PathwayReviewId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+                    b.HasOne("PathwayNavigator.Api.Models.User", "Student")
+                        .WithMany().HasForeignKey("StudentId").OnDelete(DeleteBehavior.Restrict).IsRequired();
+                    b.Navigation("PathwayReview");
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("PathwayNavigator.Api.Models.PathwayReview", b =>
