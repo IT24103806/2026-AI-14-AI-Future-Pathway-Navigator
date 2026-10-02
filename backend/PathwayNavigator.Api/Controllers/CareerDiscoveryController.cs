@@ -76,6 +76,37 @@ namespace PathwayNavigator.Api.Controllers
         }
 
         /// <summary>
+        /// Fetches the most recent pathway analysis owned by the current user.
+        /// </summary>
+        [HttpGet("me/latest")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PathwayAnalysisResponseDto))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLatest()
+        {
+            var userId = GetCurrentUserId();
+            var analysis = await _analysisService.GetLatestForUserAsync(userId);
+
+            if (analysis == null)
+            {
+                return NotFound(new { message = "No saved pathway analysis found for the current student." });
+            }
+
+            return Ok(analysis);
+        }
+
+        /// <summary>
+        /// Fetches all previously generated pathway analyses owned by the current user, newest first.
+        /// </summary>
+        [HttpGet("me/history")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(System.Collections.Generic.IReadOnlyList<PathwayAnalysisResponseDto>))]
+        public async Task<IActionResult> GetHistory()
+        {
+            var userId = GetCurrentUserId();
+            var history = await _analysisService.GetHistoryForUserAsync(userId);
+            return Ok(history);
+        }
+
+        /// <summary>
         /// Fetches a previously generated pathway analysis owned by the current user.
         /// </summary>
         [HttpGet("{id:guid}")]

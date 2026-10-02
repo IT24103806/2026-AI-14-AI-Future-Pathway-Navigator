@@ -52,6 +52,36 @@ class ErrorBanner extends StatelessWidget {
   }
 }
 
+/// Inline confirmation, announced to screen readers as a live region.
+class SuccessBanner extends StatelessWidget {
+  const SuccessBanner({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Card(
+        color: scheme.primaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.check_circle_outline, color: scheme.onPrimaryContainer),
+              const SizedBox(width: 12),
+              Expanded(child: Text(message, style: TextStyle(color: scheme.onPrimaryContainer))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key, this.message});
 

@@ -65,12 +65,27 @@ public class CounsellorReviewService : ICounsellorReviewService
         var activeExists = await _context.PathwayReviews.AnyAsync(r => r.PathwayAnalysisId == analysisId && r.Status == "Pending");
         if (activeExists) throw new InvalidOperationException("This pathway already has a pending counsellor review.");
 
+        var previousReview = await _context.PathwayReviews
+            .AsNoTracking()
+            .Where(r => r.PathwayAnalysisId == analysisId && r.StudentId == studentId)
+            .OrderByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        var normalizedStream = input.AlStream.Trim();
+        var normalizedResults = input.AlResults.Trim().ToUpperInvariant();
+        var normalizedBudget = string.IsNullOrWhiteSpace(input.BudgetLevel) ? "Medium" : input.BudgetLevel.Trim();
+        var normalizedSkills = (input.CurrentSkills ?? new List<string>())
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         var agentResult = await _agentService.ProcessAgent4RealityCheckAsync(new RealityCheckAgentRequestDto
         {
             StudentId = studentId.ToString(), PathwayAnalysisId = analysisId.ToString(),
-            TargetCareer = input.TargetCareer.Trim(), AlStream = input.AlStream.Trim(),
-            AlResults = input.AlResults.Trim(), BudgetLevel = input.BudgetLevel,
-            CurrentSkills = input.CurrentSkills.Select(s => s.Trim()).Where(s => s.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            TargetCareer = input.TargetCareer.Trim(), AlStream = normalizedStream,
+            AlResults = normalizedResults, BudgetLevel = normalizedBudget,
+            CurrentSkills = normalizedSkills
         });
         if (agentResult == null) throw new HttpRequestException("Reality Check Agent is temporarily unavailable.");
         if (agentResult.FeasibilityScore is < 0 or > 100 || string.IsNullOrWhiteSpace(agentResult.WorkflowId))
@@ -80,9 +95,14 @@ public class CounsellorReviewService : ICounsellorReviewService
             throw new InvalidDataException("Reality Check could not validate this pathway; no approval was recorded.");
 
         var initialStatus = agentResult.CounsellorReviewRequired ? "Pending" : "Approved";
+        // Any re-run for an analysis that already has a decided review is an audited resubmission.
+        var isResubmission = previousReview != null;
+
         var row = new PathwayReview
         {
             PathwayAnalysisId = analysisId, StudentId = studentId, TargetCareer = input.TargetCareer.Trim(),
+            AlStream = normalizedStream, AlResults = normalizedResults, BudgetLevel = normalizedBudget,
+            CurrentSkillsJson = JsonSerializer.Serialize(normalizedSkills),
             WorkflowId = agentResult.WorkflowId, AgentStatus = agentResult.Status,
             Status = initialStatus, IsHighRisk = agentResult.IsHighRisk,
             RiskReason = agentResult.RiskReason, FeasibilityScore = agentResult.FeasibilityScore,
@@ -101,14 +121,61 @@ public class CounsellorReviewService : ICounsellorReviewService
         };
         row.AuditEvents.Add(new PathwayReviewAudit
         {
-            ActorUserId = studentId, Action = "RealityCheckCompleted", FromStatus = "Created", ToStatus = initialStatus,
-            Details = agentResult.CounsellorReviewRequired ? "High-impact pathway paused for counsellor approval." : "Deterministic checks passed."
+            ActorUserId = studentId,
+            Action = isResubmission ? "RealityCheckResubmitted" : "RealityCheckCompleted",
+            FromStatus = isResubmission ? previousReview!.Status : "Created",
+            ToStatus = initialStatus,
+            Details = agentResult.CounsellorReviewRequired
+                ? "High-impact pathway paused for counsellor approval."
+                : "Deterministic checks passed."
         });
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        // Keep StudentProfile Reality Check fields and skills synced for pre-filling future evaluations
+        var profile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == studentId);
+        if (profile != null)
+        {
+            profile.AlStream = normalizedStream;
+            profile.AlResults = normalizedResults;
+            profile.BudgetLevel = normalizedBudget;
+            var mergedSkills = (profile.CoreSkills ?? new List<string>())
+                .Concat(normalizedSkills)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            profile.CoreSkills = mergedSkills;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync()
+            : null;
         _context.PathwayReviews.Add(row);
         await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
+        if (transaction != null)
+        {
+            await transaction.CommitAsync();
+        }
         return Map(row);
+    }
+
+    public async Task<PathwayReviewResponseDto> ResubmitAsync(Guid reviewId, Guid studentId, StartRealityCheckDto input)
+    {
+        var existing = await _context.PathwayReviews
+            .AsNoTracking()
+            .SingleOrDefaultAsync(r => r.Id == reviewId && r.StudentId == studentId);
+
+        if (existing == null)
+        {
+            throw new KeyNotFoundException("Review record not found for the signed-in student.");
+        }
+
+        if (string.Equals(existing.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("This review is still pending counsellor decision and cannot be resubmitted yet.");
+        }
+
+        return await CreateAsync(existing.PathwayAnalysisId, studentId, input);
     }
 
     public async Task<PathwayReviewResponseDto?> SubmitDecisionAsync(Guid reviewId, Guid counsellorId, CounsellorDecisionDto dto)
@@ -154,7 +221,9 @@ public class CounsellorReviewService : ICounsellorReviewService
         DegreeRequirement = r.DegreeRequirement, SubjectRequirementsJson = r.SubjectRequirementsJson,
         EntryRequirementsJson = r.EntryRequirementsJson, CostGuidance = r.CostGuidance,
         GapClosurePlanJson = r.GapClosurePlanJson, EvidenceSourcesJson = r.EvidenceSourcesJson,
-        FeasibilityScore = r.FeasibilityScore, TargetCareer = r.TargetCareer, WorkflowId = r.WorkflowId,
+        FeasibilityScore = r.FeasibilityScore, TargetCareer = r.TargetCareer,
+        AlStream = r.AlStream, AlResults = r.AlResults, BudgetLevel = r.BudgetLevel,
+        CurrentSkillsJson = r.CurrentSkillsJson, WorkflowId = r.WorkflowId,
         AgentStatus = r.AgentStatus, ValidationResultsJson = r.ValidationResultsJson,
         ToolCallsJson = r.ToolCallsJson, ExecutionTraceJson = r.ExecutionTraceJson,
         AgentError = r.AgentError, CounsellorFeedback = r.CounsellorFeedback,

@@ -120,6 +120,7 @@ class FakeCareerRepository implements CareerRepository {
   PathwayAnalysis? analysis;
   PathwayPlan? plan;
   Object? error;
+  List<String> lastCompletedPhases = const <String>[];
 
   PathwayAnalysis _analysis() {
     final failure = error;
@@ -131,15 +132,38 @@ class FakeCareerRepository implements CareerRepository {
   Future<PathwayAnalysis> analyze() async => _analysis();
 
   @override
+  Future<PathwayAnalysis?> getLatestAnalysis() async {
+    final failure = error;
+    if (failure != null) throw failure;
+    return analysis;
+  }
+
+  @override
   Future<PathwayAnalysis> approve(String analysisId) async => _analysis();
 
   @override
   Future<PathwayAnalysis> reject(String analysisId) async => _analysis();
 
   @override
-  Future<PathwayPlan> buildPlan(String pathwayName) async {
+  Future<PathwayPlan> buildPlan(String pathwayName, {List<String> completedPhases = const <String>[]}) async {
     final failure = error;
     if (failure != null) throw failure;
+    lastCompletedPhases = completedPhases;
+    return plan!;
+  }
+
+  @override
+  Future<PathwayPlan?> getLatestPlan() async {
+    final failure = error;
+    if (failure != null) throw failure;
+    return plan;
+  }
+
+  @override
+  Future<PathwayPlan> updatePlanProgress(String planId, List<String> completedPhases) async {
+    final failure = error;
+    if (failure != null) throw failure;
+    lastCompletedPhases = completedPhases;
     return plan!;
   }
 }
@@ -152,8 +176,23 @@ class FakeReviewRepository implements ReviewRepository {
   final List<ReviewQuery> queries = [];
   ({String id, String decision, String feedback})? lastDecision;
 
+  RealityCheckInput? lastInput;
+  ({String id, RealityCheckInput input})? lastResubmission;
+  PathwayReview? resubmitResult;
+
   @override
-  Future<PathwayReview> startRealityCheck(String analysisId, RealityCheckInput input) async => myStatus!;
+  Future<PathwayReview> startRealityCheck(String analysisId, RealityCheckInput input) async {
+    lastInput = input;
+    return myStatus!;
+  }
+
+  @override
+  Future<PathwayReview> resubmitRealityCheck(String reviewId, RealityCheckInput input) async {
+    final failure = error;
+    if (failure != null) throw failure;
+    lastResubmission = (id: reviewId, input: input);
+    return resubmitResult ?? fakeReview(id: 'r2', status: 'Approved');
+  }
 
   @override
   Future<PathwayReview?> getMyStatus() async {
@@ -201,6 +240,10 @@ Map<String, dynamic> reviewJson({String id = 'r1', String status = 'Pending', St
       'evidenceSourcesJson': '["UGC handbook"]',
       'feasibilityScore': 62,
       'targetCareer': career,
+      'alStream': 'Physical Science',
+      'alResults': 'A, B, C',
+      'budgetLevel': 'Low',
+      'currentSkillsJson': '["Python"]',
       'workflowId': 'wf-1',
       'validationResultsJson': '["ok"]',
       'toolCallsJson': '[{"tool_name":"lookup","status":"success","duration_ms":12.4,"result_summary":"found"}]',
@@ -234,6 +277,12 @@ PathwayAnalysis fakeAnalysis({String status = 'pending_approval'}) => PathwayAna
           'roadmap': [
             {'phase': 'Foundation', 'course': 'Python'},
           ],
+          'day_in_the_life': 'Builds and deploys ML models.',
+          'salary_range_lkr': 'LKR 180,000 – 450,000/mo',
+          'industry_tools': ['PyTorch', 'FastAPI'],
+          'portfolio_projects': ['RAG Assistant'],
+          'recommended_certifications': ['DeepLearning.AI ML Specialization'],
+          'sri_lankan_education_routes': ['SLIIT BSc (Hons) in IT - AI'],
         },
       ],
       'validation_errors': <String>[],

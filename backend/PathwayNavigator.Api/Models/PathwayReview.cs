@@ -50,6 +50,17 @@ public class PathwayReview
     [Required, MaxLength(120)]
     public string TargetCareer { get; set; } = string.Empty;
 
+    [MaxLength(80)]
+    public string AlStream { get; set; } = string.Empty;
+
+    [MaxLength(80)]
+    public string AlResults { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    public string BudgetLevel { get; set; } = "Medium";
+
+    public string CurrentSkillsJson { get; set; } = "[]";
+
     [Required, MaxLength(100)]
     public string WorkflowId { get; set; } = string.Empty;
 

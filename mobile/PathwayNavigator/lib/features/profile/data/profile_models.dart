@@ -22,6 +22,9 @@ class StudentProfile {
     required this.coreSkills,
     required this.hobbiesInterests,
     required this.careerAmbitions,
+    this.alStream = '',
+    this.alResults = '',
+    this.budgetLevel = 'Medium',
     required this.onboardingMethod,
     required this.isOnboardingCompleted,
   });
@@ -30,6 +33,9 @@ class StudentProfile {
   final List<String> coreSkills;
   final List<String> hobbiesInterests;
   final String careerAmbitions;
+  final String alStream;
+  final String alResults;
+  final String budgetLevel;
   final String onboardingMethod;
   final bool isOnboardingCompleted;
 
@@ -38,6 +44,9 @@ class StudentProfile {
         coreSkills: asStringList(json['coreSkills']),
         hobbiesInterests: asStringList(json['hobbiesInterests']),
         careerAmbitions: asString(json['careerAmbitions']),
+        alStream: asString(json['alStream']),
+        alResults: asString(json['alResults']),
+        budgetLevel: asString(json['budgetLevel']).isNotEmpty ? asString(json['budgetLevel']) : 'Medium',
         onboardingMethod: asString(json['onboardingMethod']),
         isOnboardingCompleted: asBool(json['isOnboardingCompleted']),
       );

@@ -3,6 +3,8 @@ import 'package:pathway_navigator/core/error/app_exception.dart';
 import 'package:pathway_navigator/features/reality_check/data/review_models.dart';
 import 'package:pathway_navigator/features/reality_check/presentation/counsellor_queue_controller.dart';
 import 'package:pathway_navigator/features/reality_check/presentation/counsellor_review_controller.dart';
+import 'package:pathway_navigator/features/profile/data/profile_models.dart';
+import 'package:pathway_navigator/features/reality_check/presentation/reality_check_prefill_controller.dart';
 import 'package:pathway_navigator/features/reality_check/presentation/student_reality_controller.dart';
 
 import '../support/fakes.dart';
@@ -48,6 +50,113 @@ void main() {
       await controller.load();
 
       expect(controller.error, 'Server down');
+    });
+  });
+
+  group('StudentRealityController revision loop', () {
+    const input = RealityCheckInput(
+      targetCareer: 'AI Engineer',
+      alStream: 'Physical Science',
+      alResults: 'A, B, C',
+      budgetLevel: 'Low',
+      currentSkills: ['Python', 'Maths'],
+    );
+
+    test('NeedsRevision opens the revision form automatically; Approved does not', () async {
+      final revision = StudentRealityController(FakeReviewRepository()..myStatus = fakeReview(status: 'NeedsRevision'));
+      await revision.load();
+      expect(revision.revisionOpen, isTrue);
+      expect(revision.canRevise, isTrue);
+
+      final approved = StudentRealityController(FakeReviewRepository()..myStatus = fakeReview(status: 'Approved'));
+      await approved.load();
+      expect(approved.revisionOpen, isFalse);
+      expect(approved.canRevise, isTrue);
+      approved.openRevision();
+      expect(approved.revisionOpen, isTrue);
+    });
+
+    test('a pending review cannot be revised', () async {
+      final controller = StudentRealityController(FakeReviewRepository()..myStatus = fakeReview());
+      await controller.load();
+
+      controller.openRevision();
+
+      expect(controller.canRevise, isFalse);
+      expect(controller.revisionOpen, isFalse);
+    });
+
+    test('resubmit sends the review id, then replaces the latest result and prepends history', () async {
+      final repository = FakeReviewRepository()
+        ..myStatus = fakeReview(status: 'NeedsRevision')
+        ..history = [fakeReview(status: 'NeedsRevision')]
+        ..resubmitResult = fakeReview(id: 'r2', status: 'Approved');
+      final controller = StudentRealityController(repository);
+      await controller.load();
+
+      final updated = await controller.resubmit(input);
+
+      expect(repository.lastResubmission!.id, 'r1');
+      expect(repository.lastResubmission!.input.currentSkills, ['Python', 'Maths']);
+      expect(updated.id, 'r2');
+      expect(controller.latest!.id, 'r2');
+      expect(controller.history.map((r) => r.id), ['r2', 'r1']);
+      expect(controller.revisionOpen, isFalse);
+      expect(controller.resubmitNotice, contains('Approved'));
+    });
+
+    test('a failed resubmission keeps the form open and rethrows for the form to display', () async {
+      final repository = FakeReviewRepository()..myStatus = fakeReview(status: 'NeedsRevision');
+      final controller = StudentRealityController(repository);
+      await controller.load();
+      repository.error = const AppException('AI service down');
+
+      await expectLater(controller.resubmit(input), throwsA(isA<AppException>()));
+
+      expect(controller.latest!.id, 'r1');
+      expect(controller.revisionOpen, isTrue);
+    });
+  });
+
+  group('RealityCheckPrefillController', () {
+    test('combines the saved profile with the latest review', () async {
+      final controller = RealityCheckPrefillController(
+        FakeProfileRepository(
+          profile: const StudentProfile(
+            academicStage: 'After A/L',
+            coreSkills: ['SQL'],
+            hobbiesInterests: [],
+            careerAmbitions: 'AI',
+            alStream: 'Maths',
+            alResults: 'C, C, C',
+            onboardingMethod: 'StandardForm',
+            isOnboardingCompleted: true,
+          ),
+        ),
+        FakeReviewRepository()..myStatus = fakeReview(),
+      );
+
+      await controller.load();
+
+      expect(controller.isLoading, isFalse);
+      expect(controller.prefill.alStream, 'Physical Science'); // review wins
+      expect(controller.prefill.alResults, 'A, B, C');
+      expect(controller.prefill.targetCareer, 'AI Engineer');
+      expect(controller.prefill.currentSkills, ['Python', 'SQL']);
+      controller.dispose();
+    });
+
+    test('failures fall back to an empty form instead of blocking the student', () async {
+      final controller = RealityCheckPrefillController(
+        FakeProfileRepository(),
+        FakeReviewRepository()..error = const AppException('offline'),
+      );
+
+      await controller.load();
+
+      expect(controller.isLoading, isFalse);
+      expect(controller.prefill.hasSavedValues, isFalse);
+      controller.dispose();
     });
   });
 

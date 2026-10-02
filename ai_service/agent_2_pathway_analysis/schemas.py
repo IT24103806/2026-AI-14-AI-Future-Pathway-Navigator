@@ -52,6 +52,15 @@ class CareerPathRecommendation(BaseModel):
     missing_skills: List[str] = Field(default_factory=list)
     recommended_courses: List[str] = Field(default_factory=list)
     roadmap: List[RoadmapStep] = Field(default_factory=list, description="Ordered learning phases for this pathway")
+    day_in_the_life: str = Field(default="", description="Realistic day-to-day responsibilities in this career")
+    salary_range_lkr: str = Field(default="", description="Sri Lankan and remote salary band reference")
+    industry_tools: List[str] = Field(default_factory=list, description="Standard tools and frameworks used on the job")
+    portfolio_projects: List[str] = Field(default_factory=list, description="Starter portfolio project blueprints")
+    recommended_certifications: List[str] = Field(default_factory=list, description="Recognized industry certifications")
+    sri_lankan_education_routes: List[str] = Field(
+        default_factory=list,
+        description="Verified Sri Lankan state/private degree, OUSL/BIT, foundation, and TVEC NVQ routes",
+    )
 
 
 class Agent2AnalysisRequest(BaseModel):

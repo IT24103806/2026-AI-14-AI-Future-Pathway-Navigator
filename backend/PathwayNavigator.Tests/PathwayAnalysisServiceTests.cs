@@ -42,7 +42,18 @@ namespace PathwayNavigator.Tests
             Status = "pending_approval",
             Recommendations = new()
             {
-                new CareerPathRecommendationDto { Label = "Path A", PathwayName = "AI / Machine Learning Engineer", MatchScore = 70 }
+                new CareerPathRecommendationDto
+                {
+                    Label = "Path A",
+                    PathwayName = "AI / Machine Learning Engineer",
+                    MatchScore = 70,
+                    DayInTheLife = "Builds and deploys ML pipelines.",
+                    SalaryRangeLkr = "LKR 180,000 – 450,000/mo",
+                    IndustryTools = new() { "PyTorch", "Docker" },
+                    PortfolioProjects = new() { "RAG Document Q&A Assistant" },
+                    RecommendedCertifications = new() { "DeepLearning.AI ML Specialization" },
+                    SriLankanEducationRoutes = new() { "SLIIT BSc (Hons) in IT - AI" }
+                }
             }
         };
 
@@ -90,6 +101,11 @@ namespace PathwayNavigator.Tests
             Assert.NotNull(result);
             Assert.Single(result!.Recommendations);
             Assert.Equal("AI / Machine Learning Engineer", result.Recommendations[0].PathwayName);
+            Assert.Equal("LKR 180,000 – 450,000/mo", result.Recommendations[0].SalaryRangeLkr);
+            Assert.Contains("PyTorch", result.Recommendations[0].IndustryTools);
+            Assert.Contains("RAG Document Q&A Assistant", result.Recommendations[0].PortfolioProjects);
+            Assert.Contains("DeepLearning.AI ML Specialization", result.Recommendations[0].RecommendedCertifications);
+            Assert.Contains("SLIIT BSc (Hons) in IT - AI", result.Recommendations[0].SriLankanEducationRoutes);
         }
 
         [Fact]
@@ -134,6 +150,44 @@ namespace PathwayNavigator.Tests
             var result = await service.SetStatusAsync(Guid.NewGuid(), Guid.NewGuid(), "approved");
 
             Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetLatestForUserAsync_ReturnsMostRecentAnalysis_ForOwnerOnly()
+        {
+            await using var context = NewContext();
+            var (userId, profileId) = SeedUserWithProfile(context);
+            var (otherUserId, _) = SeedUserWithProfile(context);
+            var service = new PathwayAnalysisService(context);
+
+            var older = await service.CreateAsync(profileId, new PathwayAnalysisResponseDto
+            {
+                WorkflowId = "wf-older",
+                Status = "pending_approval",
+                Recommendations = new() { new CareerPathRecommendationDto { PathwayName = "Data Scientist / Data Analyst" } }
+            });
+            var olderEntity = await context.PathwayAnalyses.FindAsync(older.Id!.Value);
+            olderEntity!.CreatedAt = DateTime.UtcNow.AddMinutes(-10);
+            await context.SaveChangesAsync();
+
+            var latest = await service.CreateAsync(profileId, new PathwayAnalysisResponseDto
+            {
+                WorkflowId = "wf-latest",
+                Status = "approved",
+                Recommendations = new() { new CareerPathRecommendationDto { PathwayName = "AI / Machine Learning Engineer" } }
+            });
+
+            var foundForOwner = await service.GetLatestForUserAsync(userId);
+            var foundForOther = await service.GetLatestForUserAsync(otherUserId);
+            var history = await service.GetHistoryForUserAsync(userId);
+
+            Assert.NotNull(foundForOwner);
+            Assert.Equal(latest.Id, foundForOwner!.Id);
+            Assert.Equal("wf-latest", foundForOwner.WorkflowId);
+            Assert.Null(foundForOther);
+            Assert.Equal(2, history.Count);
+            Assert.Equal("wf-latest", history[0].WorkflowId);
+            Assert.Equal("wf-older", history[1].WorkflowId);
         }
     }
 }

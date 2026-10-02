@@ -15,6 +15,12 @@ namespace PathwayNavigator.Api.DTOs.Onboarding
         [Required(ErrorMessage = "Career ambitions are required.")]
         public string CareerAmbitions { get; set; } = string.Empty;
 
+        public string? AlStream { get; set; }
+
+        public string? AlResults { get; set; }
+
+        public string? BudgetLevel { get; set; }
+
         public string OnboardingMethod { get; set; } = "ConversationalAgent"; // "ConversationalAgent" or "StandardForm"
     }
 }

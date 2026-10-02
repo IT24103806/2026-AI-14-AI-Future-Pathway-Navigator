@@ -52,6 +52,10 @@ class PathwayReview {
     required this.evidenceSources,
     required this.feasibilityScore,
     required this.targetCareer,
+    this.alStream = '',
+    this.alResults = '',
+    this.budgetLevel = 'Medium',
+    this.currentSkills = const <String>[],
     required this.workflowId,
     required this.validationResults,
     required this.toolCalls,
@@ -77,6 +81,10 @@ class PathwayReview {
   final List<String> evidenceSources;
   final int feasibilityScore;
   final String targetCareer;
+  final String alStream;
+  final String alResults;
+  final String budgetLevel;
+  final List<String> currentSkills;
   final String workflowId;
   final List<String> validationResults;
   final List<AuditEntry> toolCalls;
@@ -87,6 +95,8 @@ class PathwayReview {
   final DateTime? reviewedAt;
 
   bool get isPending => status == ReviewStatus.pending;
+  bool get needsRevision => status == ReviewStatus.needsRevision;
+  bool get canResubmit => status == ReviewStatus.needsRevision || status == ReviewStatus.rejected;
 
   factory PathwayReview.fromJson(Map<String, dynamic> json) => PathwayReview(
         id: asString(json['id']),
@@ -104,6 +114,10 @@ class PathwayReview {
         evidenceSources: asStringList(json['evidenceSourcesJson']),
         feasibilityScore: asInt(json['feasibilityScore']),
         targetCareer: asString(json['targetCareer']),
+        alStream: asString(json['alStream']),
+        alResults: asString(json['alResults']),
+        budgetLevel: asString(json['budgetLevel']).isNotEmpty ? asString(json['budgetLevel']) : 'Medium',
+        currentSkills: asStringList(json['currentSkillsJson']),
         workflowId: asString(json['workflowId']),
         validationResults: asStringList(json['validationResultsJson']),
         toolCalls: asMapList(json['toolCallsJson']).map(AuditEntry.fromJson).toList(),
@@ -195,4 +209,50 @@ class RealityCheckInput {
   /// Splits "Python, communication" into trimmed, non-empty entries.
   static List<String> parseSkills(String raw) =>
       raw.split(',').map((skill) => skill.trim()).where((skill) => skill.isNotEmpty).toList();
+}
+
+/// Saved academic/financial context used to pre-fill the Reality Check form so a
+/// student never has to re-type A/L details, budget or skills between runs.
+class RealityCheckPrefill {
+  const RealityCheckPrefill({
+    this.targetCareer,
+    this.alStream = '',
+    this.alResults = '',
+    this.budgetLevel = 'Medium',
+    this.currentSkills = const <String>[],
+  });
+
+  static const RealityCheckPrefill empty = RealityCheckPrefill();
+
+  final String? targetCareer;
+  final String alStream;
+  final String alResults;
+  final String budgetLevel;
+  final List<String> currentSkills;
+
+  bool get hasSavedValues => alStream.isNotEmpty || alResults.isNotEmpty || currentSkills.isNotEmpty;
+
+  factory RealityCheckPrefill.fromReview(PathwayReview review) => RealityCheckPrefill(
+        targetCareer: review.targetCareer.isEmpty ? null : review.targetCareer,
+        alStream: review.alStream,
+        alResults: review.alResults,
+        budgetLevel: review.budgetLevel,
+        currentSkills: review.currentSkills,
+      );
+
+  /// Values from [primary] win; gaps are filled from [fallback]; skills are merged (case-insensitive).
+  static RealityCheckPrefill merge(RealityCheckPrefill primary, RealityCheckPrefill fallback) {
+    final seen = <String>{};
+    final skills = <String>[
+      for (final skill in [...primary.currentSkills, ...fallback.currentSkills])
+        if (skill.trim().isNotEmpty && seen.add(skill.trim().toLowerCase())) skill.trim(),
+    ];
+    return RealityCheckPrefill(
+      targetCareer: primary.targetCareer ?? fallback.targetCareer,
+      alStream: primary.alStream.isNotEmpty ? primary.alStream : fallback.alStream,
+      alResults: primary.alResults.isNotEmpty ? primary.alResults : fallback.alResults,
+      budgetLevel: primary.hasSavedValues ? primary.budgetLevel : fallback.budgetLevel,
+      currentSkills: skills,
+    );
+  }
 }

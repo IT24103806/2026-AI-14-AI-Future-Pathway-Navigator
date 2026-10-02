@@ -61,6 +61,9 @@ namespace PathwayNavigator.Api.Services
                 CoreSkills = profile.CoreSkills,
                 HobbiesInterests = profile.HobbiesInterests,
                 CareerAmbitions = profile.CareerAmbitions,
+                AlStream = profile.AlStream,
+                AlResults = profile.AlResults,
+                BudgetLevel = string.IsNullOrWhiteSpace(profile.BudgetLevel) ? "Medium" : profile.BudgetLevel,
                 IsOnboardingCompleted = profile.IsOnboardingCompleted,
                 OnboardingMethod = profile.OnboardingMethod,
                 CreatedAt = profile.CreatedAt,
@@ -82,6 +85,9 @@ namespace PathwayNavigator.Api.Services
                     CoreSkills = dto.CoreSkills ?? new(),
                     HobbiesInterests = dto.HobbiesInterests ?? new(),
                     CareerAmbitions = dto.CareerAmbitions,
+                    AlStream = dto.AlStream?.Trim() ?? string.Empty,
+                    AlResults = dto.AlResults?.Trim().ToUpperInvariant() ?? string.Empty,
+                    BudgetLevel = string.IsNullOrWhiteSpace(dto.BudgetLevel) ? "Medium" : dto.BudgetLevel.Trim(),
                     IsOnboardingCompleted = true,
                     OnboardingMethod = dto.OnboardingMethod,
                     CreatedAt = DateTime.UtcNow,
@@ -95,6 +101,18 @@ namespace PathwayNavigator.Api.Services
                 profile.CoreSkills = dto.CoreSkills ?? new();
                 profile.HobbiesInterests = dto.HobbiesInterests ?? new();
                 profile.CareerAmbitions = dto.CareerAmbitions;
+                if (!string.IsNullOrWhiteSpace(dto.AlStream))
+                {
+                    profile.AlStream = dto.AlStream.Trim();
+                }
+                if (!string.IsNullOrWhiteSpace(dto.AlResults))
+                {
+                    profile.AlResults = dto.AlResults.Trim().ToUpperInvariant();
+                }
+                if (!string.IsNullOrWhiteSpace(dto.BudgetLevel))
+                {
+                    profile.BudgetLevel = dto.BudgetLevel.Trim();
+                }
                 profile.IsOnboardingCompleted = true;
                 profile.OnboardingMethod = dto.OnboardingMethod;
                 profile.UpdatedAt = DateTime.UtcNow;
@@ -114,6 +132,9 @@ namespace PathwayNavigator.Api.Services
                 CoreSkills = profile.CoreSkills,
                 HobbiesInterests = profile.HobbiesInterests,
                 CareerAmbitions = profile.CareerAmbitions,
+                AlStream = profile.AlStream,
+                AlResults = profile.AlResults,
+                BudgetLevel = string.IsNullOrWhiteSpace(profile.BudgetLevel) ? "Medium" : profile.BudgetLevel,
                 IsOnboardingCompleted = profile.IsOnboardingCompleted,
                 OnboardingMethod = profile.OnboardingMethod,
                 CreatedAt = profile.CreatedAt,

@@ -22,5 +22,10 @@ export const API_ROUTES = {
   PROFILE: '/profile',
   CAREER_DISCOVERY_BASE: '/career-discovery',
   CAREER_DISCOVERY_ANALYZE: '/career-discovery/analyze',
+  CAREER_DISCOVERY_LATEST: '/career-discovery/me/latest',
+  CAREER_DISCOVERY_HISTORY: '/career-discovery/me/history',
+  PATHWAY_PLANNER_BASE: '/pathway-planner',
   PATHWAY_PLANNER_PLAN: '/pathway-planner/plan',
+  PATHWAY_PLANNER_LATEST: '/pathway-planner/me/latest',
+  PATHWAY_PLANNER_MY_PLANS: '/pathway-planner/me',
 };

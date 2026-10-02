@@ -31,6 +31,17 @@ public class CounsellorReviewController : ControllerBase
         catch (InvalidDataException ex) { return StatusCode(502, new { message = ex.Message }); }
     }
 
+    [HttpPost("{id:guid}/resubmit")]
+    [Authorize(Roles = "Student")]
+    public async Task<IActionResult> ResubmitRealityCheck(Guid id, [FromBody] StartRealityCheckDto dto)
+    {
+        try { return Ok(await _reviewService.ResubmitAsync(id, CurrentUserId(), dto)); }
+        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+        catch (HttpRequestException ex) { return StatusCode(502, new { message = ex.Message }); }
+        catch (InvalidDataException ex) { return StatusCode(502, new { message = ex.Message }); }
+    }
+
     [HttpGet]
     [Authorize(Roles = "Counsellor,Admin")]
     public async Task<IActionResult> GetReviews(

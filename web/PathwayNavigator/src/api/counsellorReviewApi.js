@@ -5,6 +5,10 @@ export const counsellorReviewApi = {
     const response = await apiClient.post(`/counsellor-review/analysis/${analysisId}/evaluate`, input);
     return response.data;
   },
+  resubmitRealityCheck: async (id, input) => {
+    const response = await apiClient.post(`/counsellor-review/${id}/resubmit`, input);
+    return response.data;
+  },
   getMyStatus: async () => {
     const response = await apiClient.get('/counsellor-review/me/status');
     return response.data;

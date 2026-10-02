@@ -19,11 +19,22 @@ FastAPI AI service (ai_service, :8000)  ── Agents 1-4 (LangGraph)
 | `POST /onboarding/chat` | `OnboardingController.ChatWithAgent1` | `POST /api/v1/agent-1/chat` |
 | `POST /onboarding/standard-form` | `OnboardingController.CompleteViaStandardForm` | – |
 | `POST /career-discovery/analyze` | `CareerDiscoveryController.Analyze` | `POST /api/v1/agent-2/analyze` |
-| `GET /career-discovery/{id}`, `PATCH …/approve`, `PATCH …/reject` | `CareerDiscoveryController` | – |
+| `GET /career-discovery/me/latest`, `/me/history`, `GET /career-discovery/{id}`, `PATCH …/approve`, `PATCH …/reject` | `CareerDiscoveryController` | – |
 | `POST /pathway-planner/plan` | `PathwayPlannerController.Plan` | `POST /api/v1/agent-3/plan` |
+| `GET /pathway-planner/me/latest`, `GET /pathway-planner/me`, `PATCH /pathway-planner/{id}/progress` | `PathwayPlannerController` | – |
 | `POST /counsellor-review/analysis/{id}/evaluate` | `CounsellorReviewController.StartRealityCheck` | `POST /api/v1/agent-4/evaluate` |
+| `POST /counsellor-review/{id}/resubmit` (student re-runs Agent 4 after `NeedsRevision`/`Rejected`/`Approved`; creates a new review row, blocked while `Pending`) | `CounsellorReviewController.ResubmitRealityCheck` | `POST /api/v1/agent-4/evaluate` |
 | `GET /counsellor-review/me/status`, `/me/history` | `CounsellorReviewController` (Student) | – |
 | `GET /counsellor-review`, `GET /{id}`, `POST /{id}/decision` | `CounsellorReviewController` (Counsellor/Admin) | – |
+
+## Reality Check pre-fill & resubmission loop
+
+* `StudentProfile` stores `AlStream`, `AlResults`, `BudgetLevel`; `PathwayReview` stores the submitted `AlStream`, `AlResults`,
+  `BudgetLevel` and `CurrentSkillsJson` (migration `20261002090000_AddRealityCheckProfileAndRevisionFields`).
+* Every successful Reality Check syncs those values (and merges new skills into `CoreSkills`) back to the profile, so
+  `GET /profile` and `GET /counsellor-review/me/status` both return the data needed to pre-fill the form on web and mobile.
+* `NeedsRevision`/`Rejected` open the pre-filled "Revise & resubmit" form automatically; missing skills are one-tap chips.
+  Resubmissions are audited as `RealityCheckResubmitted` (`FromStatus` = previous status). No AI-service contract change.
 
 ## Running everything locally
 
