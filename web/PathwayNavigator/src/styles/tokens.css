@@ -171,7 +171,7 @@
   --container-max: 1200px;
   --container-wide: 1400px;
   --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
-  --nav-height: 76px;
+  --nav-height: 88px;
   --section-y: clamp(3.5rem, 2rem + 6vw, 7rem);
   --z-base: 1;
   --z-sticky: 50;
@@ -266,4 +266,15 @@
     --dur-slow: 1ms;
     --dur-slower: 1ms;
   }
+}
+
+/* The floating glass header is slightly taller on desktop (larger paddings,
+   theme switch and pill nav) than on small screens — keep the reserved top
+   space in sync so page content never slides underneath it. */
+@media (max-width: 900px) {
+  :root { --nav-height: 80px; }
+}
+
+@media (max-width: 620px) {
+  :root { --nav-height: 74px; }
 }

@@ -122,6 +122,21 @@ const DashboardPage = () => {
         </div>
       </section>
 
+      {/* ------------------------------------------------- Onboarding nudge */}
+      {!profile && (
+        <section className="glass-panel dash-nudge">
+          <span className="icon-chip" aria-hidden="true">🚀</span>
+          <div className="dash-nudge__copy">
+            <h3>Finish your profile to unlock personalised pathways</h3>
+            <p>
+              Agent 1 needs your academic stage, core skills, interests and ambition. The
+              conversational setup takes about three minutes — or use the standard form.
+            </p>
+          </div>
+          <Link to="/onboarding" className="btn btn-primary">Start AI onboarding</Link>
+        </section>
+      )}
+
       {/* ----------------------------------------------------- Profile card */}
       {profile && (
         <section className="dash-card student-profile-hero-card">

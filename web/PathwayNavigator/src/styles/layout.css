@@ -525,7 +525,6 @@
 }
 
 @media (max-width: 900px) {
-  :root { --nav-height: 70px; }
 
   .nav-link--desktop,
   .user-email,

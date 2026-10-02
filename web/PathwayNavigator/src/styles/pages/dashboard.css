@@ -307,3 +307,21 @@
 .action-tile--static { cursor: default; }
 .action-tile--static::after { display: none; }
 .action-tile--static:hover { transform: none; border-color: var(--glass-border); box-shadow: var(--shadow-sm), var(--glass-inner); }
+
+/* First-run nudge shown when no Agent 1 profile exists yet */
+.dash-nudge {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  border-color: rgba(91, 140, 255, 0.4);
+  background: linear-gradient(140deg, rgba(91, 140, 255, 0.14), var(--glass-1));
+}
+
+.dash-nudge__copy { flex: 1 1 260px; }
+.dash-nudge__copy h3 { font-size: var(--fs-lg); margin-bottom: 0.3rem; }
+.dash-nudge__copy p { color: var(--text-muted); font-size: var(--fs-md); }
+
+@media (max-width: 560px) {
+  .dash-nudge .btn { width: 100%; }
+}
