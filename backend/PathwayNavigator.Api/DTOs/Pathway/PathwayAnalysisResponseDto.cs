@@ -59,6 +59,24 @@ namespace PathwayNavigator.Api.DTOs.Pathway
 
         [JsonPropertyName("roadmap")]
         public List<RoadmapStepDto> Roadmap { get; set; } = new();
+
+        [JsonPropertyName("day_in_the_life")]
+        public string DayInTheLife { get; set; } = string.Empty;
+
+        [JsonPropertyName("salary_range_lkr")]
+        public string SalaryRangeLkr { get; set; } = string.Empty;
+
+        [JsonPropertyName("industry_tools")]
+        public List<string> IndustryTools { get; set; } = new();
+
+        [JsonPropertyName("portfolio_projects")]
+        public List<string> PortfolioProjects { get; set; } = new();
+
+        [JsonPropertyName("recommended_certifications")]
+        public List<string> RecommendedCertifications { get; set; } = new();
+
+        [JsonPropertyName("sri_lankan_education_routes")]
+        public List<string> SriLankanEducationRoutes { get; set; } = new();
     }
 
     public class PathwayAnalysisResponseDto
@@ -81,5 +99,9 @@ namespace PathwayNavigator.Api.DTOs.Pathway
 
         [JsonPropertyName("execution_trace")]
         public List<ExecutionTraceEntryDto> ExecutionTrace { get; set; } = new();
+
+        // Populated by the backend once persisted — absent on the raw Python response.
+        [JsonPropertyName("created_at")]
+        public DateTime? CreatedAt { get; set; }
     }
 }

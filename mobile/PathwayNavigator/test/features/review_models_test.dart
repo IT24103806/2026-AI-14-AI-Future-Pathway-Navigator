@@ -43,6 +43,41 @@ void main() {
     });
   });
 
+  group('Reality Check pre-fill', () {
+    test('review exposes the submitted academic context and resubmission rules', () {
+      final review = fakeReview(status: 'NeedsRevision');
+
+      expect(review.alStream, 'Physical Science');
+      expect(review.alResults, 'A, B, C');
+      expect(review.budgetLevel, 'Low');
+      expect(review.currentSkills, ['Python']);
+      expect(review.canResubmit, isTrue);
+      expect(fakeReview(status: 'Rejected').canResubmit, isTrue);
+      expect(fakeReview(status: 'Pending').canResubmit, isFalse);
+      expect(fakeReview(status: 'Approved').canResubmit, isFalse);
+    });
+
+    test('older API responses without the new fields still parse with safe defaults', () {
+      final review = PathwayReview.fromJson({'status': 'Approved'});
+      expect(review.alStream, '');
+      expect(review.budgetLevel, 'Medium');
+      expect(review.currentSkills, isEmpty);
+    });
+
+    test('merge prefers the review, fills gaps from the profile and de-duplicates skills', () {
+      final merged = RealityCheckPrefill.merge(
+        const RealityCheckPrefill(alStream: '', alResults: 'A, B, C', currentSkills: ['Python']),
+        const RealityCheckPrefill(alStream: 'Maths', alResults: 'C, C, C', budgetLevel: 'High', currentSkills: ['python', 'SQL']),
+      );
+
+      expect(merged.alStream, 'Maths');
+      expect(merged.alResults, 'A, B, C');
+      expect(merged.currentSkills, ['Python', 'SQL']);
+      expect(merged.hasSavedValues, isTrue);
+      expect(RealityCheckPrefill.empty.hasSavedValues, isFalse);
+    });
+  });
+
   group('ReviewQuery', () {
     test('omits an empty search and resets nothing implicitly', () {
       const query = ReviewQuery(search: '  ');

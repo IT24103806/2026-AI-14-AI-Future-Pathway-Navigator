@@ -8,6 +8,7 @@ class PlannerState(TypedDict):
     pathway: Optional[dict]
     roadmap: List[RoadmapStage]
     missing_skills: List[str]
+    completed_phases: List[str]
     next_action: str
     validation_errors: List[str]
     status: str

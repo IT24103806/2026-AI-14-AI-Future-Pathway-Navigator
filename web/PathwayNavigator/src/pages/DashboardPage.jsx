@@ -3,23 +3,35 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/tokenUtils';
 import { getStudentProfileApi } from '../api/profileApi';
+import { getLatestPathwayAnalysisApi, getLatestPathwayPlanApi } from '../api/pathwayApi';
 
 const DashboardPage = () => {
   const { user, token, logout } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [latestAnalysis, setLatestAnalysis] = useState(null);
+  const [latestPlan, setLatestPlan] = useState(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await getStudentProfileApi();
-        setProfile(data);
+        const [profileData, analysisData, planData] = await Promise.all([
+          getStudentProfileApi().catch(() => null),
+          getLatestPathwayAnalysisApi().catch(() => null),
+          getLatestPathwayPlanApi().catch(() => null),
+        ]);
+        if (profileData) setProfile(profileData);
+        if (analysisData) setLatestAnalysis(analysisData);
+        if (planData) setLatestPlan(planData);
       } catch (err) {
-        console.warn('Profile not yet created or error fetching:', err);
+        console.warn('Dashboard data fetch warning:', err);
       }
     };
 
-    fetchProfile();
+    fetchDashboardData();
   }, []);
+
+  const completedStages = (latestPlan?.roadmap || []).filter((s) => s.status === 'completed').length;
+  const totalStages = (latestPlan?.roadmap || []).length;
 
   return (
     <div className="dashboard-container">
@@ -113,9 +125,18 @@ const DashboardPage = () => {
           <div className="feature-icon">🤖</div>
           <h3>AI Pathway Recommender</h3>
           <p>
-            Explore customized AI career paths and skill trees tailored for your {profile?.academicStage || 'academic'} profile.
+            {latestAnalysis?.recommendations?.length > 0
+              ? `Top match: ${latestAnalysis.recommendations[0].pathway_name} (${latestAnalysis.recommendations[0].match_score}% match).`
+              : `Explore customized AI career paths and skill trees tailored for your ${profile?.academicStage || 'academic'} profile.`}
           </p>
-          <Link to="/career-discovery" className="btn btn-sm btn-primary mt-2">Explore Pathways</Link>
+          {latestPlan?.status === 'ready' && (
+            <p className="text-dim" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+              🗺️ Active Roadmap: <strong>{latestPlan.selected_pathway}</strong> ({completedStages}/{totalStages} milestones completed)
+            </p>
+          )}
+          <Link to="/career-discovery" className="btn btn-sm btn-primary mt-2">
+            {latestAnalysis ? 'Continue Pathways & Roadmap' : 'Explore Pathways'}
+          </Link>
         </div>
 
         <div className="dash-card feature-card">

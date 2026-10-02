@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ScoreRing from './ScoreRing';
 import MarketMeter from './MarketMeter';
 import TrendBadge from './TrendBadge';
@@ -15,12 +15,26 @@ const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuildi
     trend,
     data_source: dataSource,
     reasoning,
-    missing_skills: missingSkills,
-    recommended_courses: recommendedCourses,
-    roadmap,
+    missing_skills: missingSkills = [],
+    recommended_courses: recommendedCourses = [],
+    roadmap = [],
+    day_in_the_life: dayInTheLife = '',
+    salary_range_lkr: salaryRangeLkr = '',
+    industry_tools: industryTools = [],
+    portfolio_projects: portfolioProjects = [],
+    recommended_certifications: recommendedCertifications = [],
+    sri_lankan_education_routes: sriLankanEducationRoutes = [],
   } = recommendation;
 
+  const [isDeepDiveOpen, setIsDeepDiveOpen] = useState(false);
+
   const isLive = dataSource === 'adzuna_live';
+  const hasDeepDive =
+    Boolean(dayInTheLife) ||
+    industryTools.length > 0 ||
+    portfolioProjects.length > 0 ||
+    recommendedCertifications.length > 0 ||
+    sriLankanEducationRoutes.length > 0;
 
   return (
     <div
@@ -43,9 +57,16 @@ const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuildi
         <MarketMeter icon="⚔️" label="Competition" value={competitionScore} variant="competition" />
       </div>
 
-      <span className={`data-source-badge ${isLive ? 'data-source-live' : 'data-source-simulated'}`}>
-        {isLive ? '🟢 Live Market Data (Adzuna)' : '🧪 Simulated Market Data'}
-      </span>
+      <div className="pathway-badges-row">
+        <span className={`data-source-badge ${isLive ? 'data-source-live' : 'data-source-simulated'}`}>
+          {isLive ? '🟢 Live Market Data (Adzuna)' : '🧪 Simulated Market Data'}
+        </span>
+        {salaryRangeLkr && (
+          <span className="salary-range-badge" title="Estimated compensation band">
+            💰 {salaryRangeLkr}
+          </span>
+        )}
+      </div>
 
       <p className="pathway-reasoning">{reasoning}</p>
 
@@ -61,6 +82,75 @@ const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuildi
       </div>
 
       <RoadmapTimeline roadmap={roadmap} />
+
+      {hasDeepDive && (
+        <div className="career-deep-dive-container">
+          <button
+            type="button"
+            className="deep-dive-toggle-btn"
+            aria-expanded={isDeepDiveOpen}
+            onClick={() => setIsDeepDiveOpen((prev) => !prev)}
+          >
+            <span>🔎 Career Deep-Dive, Projects &amp; SL Study Routes</span>
+            <span className="deep-dive-chevron">{isDeepDiveOpen ? '▲' : '▼'}</span>
+          </button>
+
+          {isDeepDiveOpen && (
+            <div className="career-deep-dive-panel">
+              {dayInTheLife && (
+                <div className="deep-dive-section">
+                  <h5>💼 Day in the Life</h5>
+                  <p>{dayInTheLife}</p>
+                </div>
+              )}
+
+              {industryTools.length > 0 && (
+                <div className="deep-dive-section">
+                  <h5>🛠️ Industry Tools &amp; Tech Stack</h5>
+                  <div className="slot-tags-container">
+                    {industryTools.map((tool, idx) => (
+                      <span key={idx} className="slot-pill tool-pill">{tool}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {portfolioProjects.length > 0 && (
+                <div className="deep-dive-section">
+                  <h5>🚀 Starter Portfolio Project Blueprints</h5>
+                  <ol className="deep-dive-list">
+                    {portfolioProjects.map((project, idx) => (
+                      <li key={idx}>{project}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {recommendedCertifications.length > 0 && (
+                <div className="deep-dive-section">
+                  <h5>🏅 Industry Certifications</h5>
+                  <ul className="deep-dive-list">
+                    {recommendedCertifications.map((cert, idx) => (
+                      <li key={idx}>{cert}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {sriLankanEducationRoutes.length > 0 && (
+                <div className="deep-dive-section">
+                  <h5>🎓 Sri Lankan Degree, Foundation &amp; NVQ Routes</h5>
+                  <ul className="deep-dive-list sl-routes-list">
+                    {sriLankanEducationRoutes.map((route, idx) => (
+                      <li key={idx}>{route}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         type="button"

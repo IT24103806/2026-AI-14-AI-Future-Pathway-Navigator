@@ -18,6 +18,10 @@ public class PathwayReviewResponseDto
     public string EvidenceSourcesJson { get; set; } = "[]";
     public int FeasibilityScore { get; set; }
     public string TargetCareer { get; set; } = string.Empty;
+    public string AlStream { get; set; } = string.Empty;
+    public string AlResults { get; set; } = string.Empty;
+    public string BudgetLevel { get; set; } = "Medium";
+    public string CurrentSkillsJson { get; set; } = "[]";
     public string WorkflowId { get; set; } = string.Empty;
     public string AgentStatus { get; set; } = string.Empty;
     public string ValidationResultsJson { get; set; } = "[]";

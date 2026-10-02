@@ -30,4 +30,45 @@ void main() {
     expect(find.textContaining('Risk requiring review'), findsOneWidget);
     expect(find.text('Python'), findsWidgets);
   });
+
+  testWidgets('NeedsRevision opens a pre-filled form; adding a missing skill and resubmitting calls resubmit', (tester) async {
+    tester.view.physicalSize = const Size(1000, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = FakeReviewRepository()
+      ..myStatus = fakeReview(status: 'NeedsRevision')
+      ..resubmitResult = fakeReview(id: 'r2', status: 'Approved');
+
+    await pumpScreen(tester, repository);
+
+    expect(find.text('Revise & resubmit Reality Check'), findsOneWidget);
+    expect(find.text('Pre-filled from your saved profile'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Physical Science'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'A, B, C'), findsOneWidget);
+
+    await tester.tap(find.text('+ Maths'));
+    await tester.pump();
+    expect(find.widgetWithText(TextFormField, 'Python, Maths'), findsOneWidget);
+
+    await tester.tap(find.text('Resubmit Reality Check'));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastResubmission!.id, 'r1');
+    expect(repository.lastResubmission!.input.currentSkills, ['Python', 'Maths']);
+    expect(find.textContaining('Updated Reality Check submitted'), findsOneWidget);
+  });
+
+  testWidgets('an approved review offers an optional Revise & resubmit button', (tester) async {
+    await pumpScreen(tester, FakeReviewRepository()..myStatus = fakeReview(status: 'Approved'));
+
+    expect(find.text('Revise & resubmit'), findsOneWidget);
+    expect(find.text('Revise & resubmit Reality Check'), findsNothing);
+  });
+
+  testWidgets('a pending review shows no revision controls', (tester) async {
+    await pumpScreen(tester, FakeReviewRepository()..myStatus = fakeReview());
+
+    expect(find.text('Revise & resubmit'), findsNothing);
+    expect(find.text('Revise & resubmit Reality Check'), findsNothing);
+  });
 }

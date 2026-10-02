@@ -70,6 +70,10 @@ class PathwayCard extends StatelessWidget {
               rec.isLiveData ? 'Live market data (Adzuna)' : 'Simulated market data - treat as an estimate',
               style: theme.textTheme.bodySmall,
             ),
+            if (rec.salaryRangeLkr.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text('Salary guide: ${rec.salaryRangeLkr}', style: theme.textTheme.bodySmall),
+            ],
             const SizedBox(height: 12),
             Text(rec.reasoning),
             const SizedBox(height: 12),
@@ -93,6 +97,57 @@ class PathwayCard extends StatelessWidget {
                       title: Text(step.phase),
                       subtitle: Text(step.course),
                     ),
+                ],
+              ),
+            ],
+            if (rec.hasDeepDive) ...[
+              const SizedBox(height: 8),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Career deep-dive, projects & SL routes'),
+                childrenCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (rec.dayInTheLife.isNotEmpty) ...[
+                    Text('Day in the life', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(rec.dayInTheLife),
+                    const SizedBox(height: 12),
+                  ],
+                  if (rec.industryTools.isNotEmpty) ...[
+                    Text('Industry tools & stack', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    TagWrap(items: rec.industryTools),
+                    const SizedBox(height: 12),
+                  ],
+                  if (rec.portfolioProjects.isNotEmpty) ...[
+                    Text('Starter portfolio projects', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    for (final project in rec.portfolioProjects)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• $project'),
+                      ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (rec.recommendedCertifications.isNotEmpty) ...[
+                    Text('Industry certifications', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    for (final cert in rec.recommendedCertifications)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• $cert'),
+                      ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (rec.sriLankanEducationRoutes.isNotEmpty) ...[
+                    Text('Sri Lankan degree, foundation & NVQ routes', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    for (final route in rec.sriLankanEducationRoutes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• $route'),
+                      ),
+                  ],
                 ],
               ),
             ],

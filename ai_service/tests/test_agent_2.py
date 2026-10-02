@@ -207,7 +207,33 @@ def test_golden_case_full_workflow_produces_valid_response(monkeypatch):
     assert response.validation_errors == []
     assert len(response.recommendations) == 3
     assert all(rec.reasoning for rec in response.recommendations)
+    assert all(rec.day_in_the_life for rec in response.recommendations)
+    assert all(rec.salary_range_lkr for rec in response.recommendations)
+    assert all(len(rec.industry_tools) > 0 for rec in response.recommendations)
+    assert all(len(rec.portfolio_projects) >= 3 for rec in response.recommendations)
+    assert all(len(rec.recommended_certifications) >= 2 for rec in response.recommendations)
+    assert all(len(rec.sri_lankan_education_routes) >= 3 for rec in response.recommendations)
 
     # Observability: every node ran and reported success.
     assert len(response.execution_trace) == 6
     assert all(entry.status == "success" for entry in response.execution_trace)
+
+
+def test_every_pathway_in_knowledge_base_has_enriched_deep_dive_fields():
+    required_keys = {
+        "day_in_the_life",
+        "salary_range_lkr",
+        "industry_tools",
+        "portfolio_projects",
+        "recommended_certifications",
+        "sri_lankan_education_routes",
+    }
+    for pathway in CAREER_PATHWAYS:
+        assert required_keys <= set(pathway.keys()), pathway["pathway_name"]
+        assert len(pathway["day_in_the_life"]) > 20
+        assert "LKR" in pathway["salary_range_lkr"]
+        assert len(pathway["industry_tools"]) >= 4
+        assert len(pathway["portfolio_projects"]) >= 3
+        assert len(pathway["recommended_certifications"]) >= 2
+        assert len(pathway["sri_lankan_education_routes"]) >= 3
+

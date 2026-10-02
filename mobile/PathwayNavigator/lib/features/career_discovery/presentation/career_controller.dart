@@ -12,17 +12,21 @@ class CareerController extends ChangeNotifier {
 
   PathwayAnalysis? _analysis;
   PathwayPlan? _plan;
+  bool _loadingSaved = false;
   bool _analyzing = false;
   bool _deciding = false;
   String? _planningPathway;
+  String? _updatingStage;
   String? _error;
   bool _needsOnboarding = false;
 
   PathwayAnalysis? get analysis => _analysis;
   PathwayPlan? get plan => _plan;
+  bool get isLoadingSaved => _loadingSaved;
   bool get isAnalyzing => _analyzing;
   bool get isDeciding => _deciding;
   String? get planningPathway => _planningPathway;
+  String? get updatingStage => _updatingStage;
   String? get error => _error;
 
   /// True when the backend said the profile is incomplete - the UI offers a shortcut to onboarding.
@@ -40,6 +44,32 @@ class CareerController extends ChangeNotifier {
     _needsOnboarding = _error!.toLowerCase().contains('complete onboarding');
   }
 
+  /// Auto-loads the student's latest saved Agent 2 analysis and Agent 3 roadmap.
+  Future<void> loadSaved() async {
+    if (_loadingSaved) return;
+    _loadingSaved = true;
+    notifyListeners();
+    try {
+      final results = await Future.wait<Object?>([
+        _repository.getLatestAnalysis(),
+        _repository.getLatestPlan(),
+      ]);
+      final savedAnalysis = results[0] as PathwayAnalysis?;
+      final savedPlan = results[1] as PathwayPlan?;
+      if (savedAnalysis != null) {
+        _analysis = savedAnalysis;
+      }
+      if (savedPlan != null && savedPlan.isReady) {
+        _plan = savedPlan;
+      }
+    } catch (_) {
+      // Initial auto-load is best-effort; do not block the student from running a fresh analysis.
+    } finally {
+      _loadingSaved = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> analyze() async {
     if (_analyzing) return;
     _analyzing = true;
@@ -48,7 +78,6 @@ class CareerController extends ChangeNotifier {
     notifyListeners();
     try {
       _analysis = await _repository.analyze();
-      _plan = null;
     } catch (error) {
       _fail(error, 'Something went wrong while analysing your pathways.');
     } finally {
@@ -63,7 +92,10 @@ class CareerController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final plan = await _repository.buildPlan(pathwayName);
+      final existingPhases = (_plan != null && _plan!.selectedPathway.toLowerCase() == pathwayName.toLowerCase())
+          ? _plan!.completedPhases
+          : const <String>[];
+      final plan = await _repository.buildPlan(pathwayName, completedPhases: existingPhases);
       if (plan.isReady) {
         _plan = plan;
       } else {
@@ -74,6 +106,37 @@ class CareerController extends ChangeNotifier {
       _fail(error, 'Something went wrong while building the roadmap.');
     } finally {
       _planningPathway = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleStage(String stage) async {
+    final currentPlan = _plan;
+    if (currentPlan == null || _updatingStage != null) return;
+    _updatingStage = stage;
+    _error = null;
+    notifyListeners();
+
+    final currentCompleted = currentPlan.completedPhases.isNotEmpty
+        ? currentPlan.completedPhases
+        : [for (final s in currentPlan.roadmap) if (s.isCompleted) s.stage];
+
+    final lower = stage.toLowerCase();
+    final nextCompleted = currentCompleted.any((p) => p.toLowerCase() == lower)
+        ? [for (final p in currentCompleted) if (p.toLowerCase() != lower) p]
+        : <String>[...currentCompleted, stage];
+
+    try {
+      final updated = currentPlan.id != null
+          ? await _repository.updatePlanProgress(currentPlan.id!, nextCompleted)
+          : await _repository.buildPlan(currentPlan.selectedPathway, completedPhases: nextCompleted);
+      if (updated.isReady) {
+        _plan = updated;
+      }
+    } catch (error) {
+      _fail(error, 'Failed to save roadmap milestone progress.');
+    } finally {
+      _updatingStage = null;
       notifyListeners();
     }
   }

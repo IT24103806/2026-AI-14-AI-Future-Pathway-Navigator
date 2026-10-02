@@ -7,6 +7,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../data/review_models.dart';
 import '../data/review_repository.dart';
+import 'reality_check_form.dart';
 import 'review_evidence_view.dart';
 import 'student_reality_controller.dart';
 
@@ -102,8 +103,32 @@ class _StudentRealityBody extends StatelessWidget {
               ],
             ),
           ),
+          if (controller.resubmitNotice != null) ...[
+            SuccessBanner(message: controller.resubmitNotice!),
+            const SizedBox(height: 8),
+          ],
           ReviewEvidenceView(review: review),
           SectionCard(title: 'Counsellor feedback', icon: Icons.record_voice_over_outlined, child: Text(feedback)),
+          if (controller.canRevise && !controller.revisionOpen)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton.icon(
+                onPressed: controller.openRevision,
+                icon: const Icon(Icons.replay),
+                label: const Text('Revise & resubmit'),
+              ),
+            ),
+          if (controller.canRevise && controller.revisionOpen)
+            RealityCheckForm(
+              // Each resubmission produces a new review; rebuild the form from it.
+              key: ValueKey(review.id),
+              analysisId: review.pathwayAnalysisId,
+              careers: [review.targetCareer],
+              prefill: RealityCheckPrefill.fromReview(review),
+              suggestedSkills: review.missingSkills,
+              isResubmission: true,
+              submit: controller.resubmit,
+            ),
           const AiDisclosureBanner(),
           const SizedBox(height: 8),
           SectionCard(
