@@ -1,0 +1,267 @@
+/* =============================================================================
+   PathwayNavigator · Counsellor approval centre
+   ============================================================================= */
+
+.review-page {
+  width: min(100%, var(--container-wide));
+  margin-inline: auto;
+  padding: clamp(1.25rem, 2.5vw, 2.25rem) var(--gutter) clamp(3rem, 5vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: clamp(1.25rem, 2.4vw, 1.9rem);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--glass-border);
+  background:
+    radial-gradient(110% 130% at 0% 0%, rgba(168, 85, 247, 0.16), transparent 58%),
+    linear-gradient(150deg, var(--glass-3), var(--glass-1));
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: var(--shadow-lg), var(--glass-inner);
+}
+
+.review-header h1 { font-size: var(--fs-2xl); }
+.review-header p { margin-top: 0.3rem; color: var(--text-muted); font-size: var(--fs-md); }
+
+.review-alert { margin: 0; }
+
+/* Filters ------------------------------------------------------------------ */
+.review-filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(2, minmax(130px, 1fr)) auto;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-1);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: var(--shadow-sm), var(--glass-inner);
+}
+
+.review-filters input,
+.review-filters select {
+  min-height: 46px;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-2);
+  color: var(--text-main);
+  font-size: var(--fs-sm);
+  outline: none;
+  transition: var(--transition);
+}
+
+.review-filters input:focus,
+.review-filters select:focus { border-color: rgba(91, 140, 255, 0.7); box-shadow: var(--ring); }
+
+.review-filters button {
+  min-height: 46px;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-3);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  transition: var(--transition);
+}
+
+.review-filters button:hover { border-color: rgba(91, 140, 255, 0.6); transform: translateY(-1px); }
+
+/* Two-pane layout ---------------------------------------------------------- */
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(420px, 1.65fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.review-list,
+.review-detail {
+  position: relative;
+  overflow: hidden;
+  padding: 1.15rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(160deg, var(--glass-2), var(--glass-1));
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  box-shadow: var(--shadow-md), var(--glass-inner);
+}
+
+.review-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.review-detail { display: flex; flex-direction: column; gap: 0.5rem; }
+.review-detail h3 {
+  margin-top: 0.9rem;
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.review-detail p { color: var(--text-muted); font-size: var(--fs-md); }
+.review-detail li { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 0.35rem; }
+
+.review-detail details {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--glass-1);
+}
+
+.review-detail details h4 {
+  margin-top: 0.75rem;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+/* Queue cards -------------------------------------------------------------- */
+.review-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 0.6rem;
+  text-align: left;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-1);
+  color: var(--text-main);
+  transition: var(--transition);
+  animation: fadeInUp var(--dur) var(--ease-out) both;
+}
+
+.review-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--glass-border-strong);
+  background: var(--glass-2);
+}
+
+.review-card.selected {
+  border-color: rgba(91, 140, 255, 0.75);
+  background: linear-gradient(140deg, rgba(91, 140, 255, 0.18), var(--glass-1));
+  box-shadow: var(--shadow-glow);
+}
+
+.review-card span:first-child { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.review-card strong { font-size: var(--fs-md); }
+.review-card small { color: var(--text-dim); font-size: var(--fs-2xs); }
+.review-card .score { grid-column: 1 / -1; color: var(--accent-cyan); font-size: var(--fs-xs); font-weight: 700; }
+
+:root[data-theme='light'] .review-card .score { color: #0e7490; }
+
+.status {
+  align-self: start;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--info-soft);
+  border: 1px solid var(--info-border);
+  color: var(--info);
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status.approved { background: var(--success-soft); border-color: var(--success-border); color: var(--success); }
+.status.rejected { background: var(--danger-soft); border-color: var(--danger-border); color: var(--danger); }
+.status.needsrevision { background: var(--warning-soft); border-color: var(--warning-border); color: var(--warning); }
+
+/* Detail header ------------------------------------------------------------ */
+.detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--divider);
+}
+
+.detail-title h2 { font-size: var(--fs-xl); margin-bottom: 0.3rem; }
+.detail-title strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.risk-box {
+  margin: 0.75rem 0;
+  padding: 0.9rem 1.05rem;
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.risk-box strong { display: block; margin-bottom: 0.2rem; }
+.risk-box p { color: inherit; margin: 0; font-size: var(--fs-sm); }
+
+/* Decision panel ----------------------------------------------------------- */
+.review-detail .decision-panel { margin-top: 1rem; }
+
+.decision-panel label {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.decision-panel textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-1);
+  color: var(--text-main);
+  font-size: var(--fs-sm);
+  resize: vertical;
+  outline: none;
+  transition: var(--transition);
+}
+
+.decision-panel textarea:focus { border-color: rgba(91, 140, 255, 0.7); box-shadow: var(--ring); }
+.decision-panel small { color: var(--text-dim); font-size: var(--fs-2xs); }
+
+.decision-buttons button {
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--text-main);
+  background: var(--glass-2);
+  transition: var(--transition);
+}
+
+.decision-buttons button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.decision-buttons button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Responsive --------------------------------------------------------------- */
+@media (max-width: 980px) {
+  .review-layout { grid-template-columns: 1fr; }
+  .review-filters { grid-template-columns: 1fr 1fr; }
+  .review-filters input { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .review-filters { grid-template-columns: 1fr; }
+  .review-filters button { width: 100%; }
+  .review-page { padding-inline: 1rem; }
+}

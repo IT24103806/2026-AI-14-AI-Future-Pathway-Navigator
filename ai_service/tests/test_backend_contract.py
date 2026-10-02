@@ -81,8 +81,8 @@ def test_agent_2_analysis_matches_PathwayAnalysisResponseDto(client):
     response = client.post(f"{API}/agent-2/analyze", json=payload)
     assert response.status_code == 200
     body = response.json()
-    # `id` is assigned by the .NET PathwayAnalysisService once the row is persisted.
-    assert_dto_satisfied(body, "Pathway/PathwayAnalysisResponseDto.cs", "PathwayAnalysisResponseDto", frozenset({"id"}))
+    # `id` and `created_at` are assigned by the .NET PathwayAnalysisService once the row is persisted.
+    assert_dto_satisfied(body, "Pathway/PathwayAnalysisResponseDto.cs", "PathwayAnalysisResponseDto", frozenset({"id", "created_at"}))
     assert body["status"] == "pending_approval" and body["recommendations"]
     assert_dto_satisfied(body["recommendations"][0], "Pathway/PathwayAnalysisResponseDto.cs", "CareerPathRecommendationDto")
     assert_dto_satisfied(body["recommendations"][0]["roadmap"][0], "Pathway/PathwayAnalysisResponseDto.cs", "RoadmapStepDto")
@@ -99,8 +99,30 @@ def test_agent_3_plan_matches_PathwayPlannerResponseDto(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ready"
-    assert_dto_satisfied(body, "Pathway/PathwayPlannerDtos.cs", "PathwayPlannerResponseDto")
+    assert_dto_satisfied(body, "Pathway/PathwayPlannerDtos.cs", "PathwayPlannerResponseDto", frozenset({"id", "updated_at"}))
     assert_dto_satisfied(body["roadmap"][0], "Pathway/PathwayPlannerDtos.cs", "RoadmapStageDto")
+
+
+def test_agent_3_plan_tracks_completed_phases_and_advances_next_action(client):
+    pathway_name = CAREER_PATHWAYS[0]["pathway_name"]
+    payload = {
+        "user_id": "u1",
+        "selected_pathway": pathway_name,
+        "profile": {"academic_stage": "Undergraduate", "core_skills": ["Python"], "career_ambitions": "AI Engineer"},
+        "completed_phases": ["education", "skills"],
+    }
+    response = client.post(f"{API}/agent-3/plan", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ready"
+    assert body["completed_phases"] == ["education", "skills"]
+    statuses = {step["stage"]: step["status"] for step in body["roadmap"]}
+    assert statuses["education"] == "completed"
+    assert statuses["skills"] == "completed"
+    assert statuses["certification"] == "not_started"
+    # Next action should now come from the 3rd stage (certification)
+    cert_stage = next(step for step in body["roadmap"] if step["stage"] == "certification")
+    assert body["next_action"] == cert_stage["actions"][0]
 
 
 def test_agent_4_evaluate_matches_RealityCheckAgentResponseDto(client):

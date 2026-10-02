@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/routes.dart';
 import '../../../core/widgets/common_widgets.dart';
+import '../../profile/data/profile_repository.dart';
+import '../../reality_check/data/review_repository.dart';
 import '../../reality_check/presentation/reality_check_form.dart';
+import '../../reality_check/presentation/reality_check_prefill_controller.dart';
 import '../data/career_models.dart';
 import '../data/career_repository.dart';
 import 'career_controller.dart';
@@ -16,7 +19,7 @@ class CareerDiscoveryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<CareerController>(
-      create: (context) => CareerController(context.read<CareerRepository>()),
+      create: (context) => CareerController(context.read<CareerRepository>())..loadSaved(),
       child: const _CareerBody(),
     );
   }
@@ -60,7 +63,12 @@ class _CareerBody extends StatelessWidget {
               ),
           ],
           const SizedBox(height: 16),
-          if (controller.isAnalyzing)
+          if (controller.isLoadingSaved && analysis == null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: LoadingView(message: 'Loading your saved pathways and roadmap…'),
+            )
+          else if (controller.isAnalyzing)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Column(
@@ -104,14 +112,48 @@ class _CareerBody extends StatelessWidget {
           planningBusy: controller.planningPathway != null,
           onBuildPlan: () => controller.buildPlan(analysis.recommendations[i].pathwayName),
         ),
-      if (plan != null) _PlanView(plan: plan),
-      RealityCheckForm(
+      if (plan != null) _PlanView(plan: plan, controller: controller),
+      _CareerRealityCheck(
         // A new analysis must reset the form state.
         key: ValueKey(analysis.id ?? analysis.workflowId),
         analysisId: analysis.id,
         careers: [for (final r in analysis.recommendations) r.pathwayName],
       ),
     ];
+  }
+}
+
+/// Loads the saved profile / latest review, then shows the Agent 4 form pre-filled with them.
+class _CareerRealityCheck extends StatelessWidget {
+  const _CareerRealityCheck({super.key, required this.analysisId, required this.careers});
+
+  final String? analysisId;
+  final List<String> careers;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<RealityCheckPrefillController>(
+      create: (context) =>
+          RealityCheckPrefillController(context.read<ProfileRepository>(), context.read<ReviewRepository>())..load(),
+      child: Consumer<RealityCheckPrefillController>(
+        builder: (context, prefill, _) {
+          if (prefill.isLoading) {
+            return const SectionCard(
+              title: 'Agent 4 · Reality Check',
+              icon: Icons.verified_user_outlined,
+              child: Text('Loading your saved details…'),
+            );
+          }
+          final id = analysisId;
+          return RealityCheckForm(
+            analysisId: id,
+            careers: careers,
+            prefill: prefill.prefill,
+            submit: (input) => context.read<ReviewRepository>().startRealityCheck(id!, input),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -189,27 +231,41 @@ class _DecisionPanel extends StatelessWidget {
 }
 
 class _PlanView extends StatelessWidget {
-  const _PlanView({required this.plan});
+  const _PlanView({required this.plan, required this.controller});
 
   final PathwayPlan plan;
+  final CareerController controller;
 
   @override
   Widget build(BuildContext context) {
+    final total = plan.roadmap.length;
+    final completed = plan.completedCount;
+    final progress = total > 0 ? completed / total : 0.0;
+
     return SectionCard(
       title: '${plan.selectedPathway} roadmap',
       icon: Icons.map_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Milestone progress: $completed / $total completed',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(value: progress),
+          const SizedBox(height: 8),
           Text('Next action: ${plan.nextAction}'),
           const SizedBox(height: 12),
           for (final step in plan.roadmap)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: step.isCompleted,
+              onChanged: controller.updatingStage != null ? null : (_) => controller.toggleStage(step.stage),
+              title: Text('${step.order}. ${step.title}', style: Theme.of(context).textTheme.titleSmall),
+              subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${step.order}. ${step.title}', style: Theme.of(context).textTheme.titleSmall),
                   Text(step.outcome),
                   if (step.actions.isNotEmpty) Text(step.actions.join(' ')),
                   Text('Estimated: ${step.estimatedDuration}', style: Theme.of(context).textTheme.bodySmall),

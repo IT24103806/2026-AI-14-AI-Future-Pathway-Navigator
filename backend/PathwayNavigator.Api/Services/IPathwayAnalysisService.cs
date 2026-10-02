@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using PathwayNavigator.Api.DTOs.Pathway;
 
@@ -9,6 +10,10 @@ namespace PathwayNavigator.Api.Services
         Task<PathwayAnalysisResponseDto> CreateAsync(Guid studentProfileId, PathwayAnalysisResponseDto agentResult);
 
         Task<PathwayAnalysisResponseDto?> GetByIdForUserAsync(Guid id, Guid userId);
+
+        Task<PathwayAnalysisResponseDto?> GetLatestForUserAsync(Guid userId);
+
+        Task<IReadOnlyList<PathwayAnalysisResponseDto>> GetHistoryForUserAsync(Guid userId);
 
         /// <summary>
         /// Moves a pending_approval analysis to "approved" or "rejected".

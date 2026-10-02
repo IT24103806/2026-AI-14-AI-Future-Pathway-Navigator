@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/constants/routes.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../data/review_models.dart';
-import '../data/review_repository.dart';
 
-/// Agent 4 input form. Shown below the Career Discovery results.
+/// Agent 4 input form, used both for the first run (Career Discovery) and for the
+/// "Needs revision" resubmission loop (Reality Check screen). It is purely presentational:
+/// the caller supplies [submit], so the same form drives `evaluate` and `resubmit`.
 class RealityCheckForm extends StatefulWidget {
-  const RealityCheckForm({super.key, required this.analysisId, required this.careers});
+  const RealityCheckForm({
+    super.key,
+    required this.analysisId,
+    required this.careers,
+    required this.submit,
+    this.prefill = RealityCheckPrefill.empty,
+    this.suggestedSkills = const <String>[],
+    this.isResubmission = false,
+  });
 
   final String? analysisId;
   final List<String> careers;
+  final RealityCheckPrefill prefill;
+
+  /// Skills Agent 4 reported as missing; shown as one-tap "add" chips when revising.
+  final List<String> suggestedSkills;
+  final bool isResubmission;
+  final Future<PathwayReview> Function(RealityCheckInput input) submit;
 
   @override
   State<RealityCheckForm> createState() => _RealityCheckFormState();
@@ -22,14 +36,28 @@ class RealityCheckForm extends StatefulWidget {
 
 class _RealityCheckFormState extends State<RealityCheckForm> {
   final _formKey = GlobalKey<FormState>();
-  final _stream = TextEditingController();
-  final _grades = TextEditingController();
-  final _skills = TextEditingController();
+  late final TextEditingController _stream = TextEditingController(text: widget.prefill.alStream);
+  late final TextEditingController _grades = TextEditingController(text: widget.prefill.alResults);
+  late final TextEditingController _skills = TextEditingController(text: widget.prefill.currentSkills.join(', '));
+  late List<String> _careerOptions;
   String? _career;
-  String _budget = 'Medium';
+  late String _budget;
   bool _busy = false;
   String? _error;
   String? _success;
+
+  @override
+  void initState() {
+    super.initState();
+    final preferred = widget.prefill.targetCareer;
+    _careerOptions = [
+      ...widget.careers,
+      if (preferred != null && !widget.careers.contains(preferred)) preferred,
+    ];
+    _career = preferred ?? (_careerOptions.length == 1 ? _careerOptions.first : null);
+    _budget = RealityCheckInput.budgetLevels.contains(widget.prefill.budgetLevel) ? widget.prefill.budgetLevel : 'Medium';
+    _skills.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -39,18 +67,23 @@ class _RealityCheckFormState extends State<RealityCheckForm> {
     super.dispose();
   }
 
+  bool _hasSkill(String skill) =>
+      RealityCheckInput.parseSkills(_skills.text).any((existing) => existing.toLowerCase() == skill.toLowerCase());
+
+  void _addSkill(String skill) {
+    if (_hasSkill(skill)) return;
+    _skills.text = [...RealityCheckInput.parseSkills(_skills.text), skill].join(', ');
+  }
+
   Future<void> _submit() async {
-    final analysisId = widget.analysisId;
-    if (analysisId == null || !_formKey.currentState!.validate()) return;
-    final repository = context.read<ReviewRepository>();
+    if (widget.analysisId == null || !_formKey.currentState!.validate()) return;
     setState(() {
       _busy = true;
       _error = null;
       _success = null;
     });
     try {
-      final review = await repository.startRealityCheck(
-        analysisId,
+      final review = await widget.submit(
         RealityCheckInput(
           targetCareer: _career!,
           alStream: _stream.text,
@@ -73,24 +106,56 @@ class _RealityCheckFormState extends State<RealityCheckForm> {
 
   @override
   Widget build(BuildContext context) {
+    final revising = widget.isResubmission;
     return SectionCard(
-      title: 'Agent 4 · Reality Check',
-      icon: Icons.verified_user_outlined,
+      title: revising ? 'Revise & resubmit Reality Check' : 'Agent 4 · Reality Check',
+      icon: revising ? Icons.replay_circle_filled_outlined : Icons.verified_user_outlined,
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Select a recommended career and enter your actual A/L results, budget and skills. '
-              'A counsellor reviews any flagged risks.',
+            Text(
+              revising
+                  ? 'Update your grades, budget or newly gained skills using the counsellor feedback, then run Agent 4 again.'
+                  : 'Select a recommended career and enter your actual A/L results, budget and skills. '
+                      'A counsellor reviews any flagged risks.',
             ),
+            if (widget.prefill.hasSavedValues) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.auto_awesome, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text('Pre-filled from your saved profile', style: Theme.of(context).textTheme.bodySmall),
+                  ),
+                ],
+              ),
+            ],
+            if (revising && widget.suggestedSkills.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Completed a gap-closing step? Tap a missing skill to add it:',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final skill in widget.suggestedSkills)
+                    ActionChip(
+                      label: Text(_hasSkill(skill) ? '✓ $skill' : '+ $skill'),
+                      onPressed: _hasSkill(skill) ? null : () => _addSkill(skill),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _career,
               isExpanded: true,
               decoration: fieldDecoration('Recommended career'),
-              items: [for (final c in widget.careers) DropdownMenuItem(value: c, child: Text(c))],
+              items: [for (final c in _careerOptions) DropdownMenuItem(value: c, child: Text(c))],
               onChanged: (value) => setState(() => _career = value),
               validator: (value) => value == null ? 'Select a career' : null,
             ),
@@ -126,14 +191,15 @@ class _RealityCheckFormState extends State<RealityCheckForm> {
             if (_success != null) ...[
               const SizedBox(height: 12),
               Text(_success!),
-              TextButton(
-                onPressed: () => context.push(AppRoutes.realityCheck),
-                child: const Text('View Reality Check'),
-              ),
+              if (!revising)
+                TextButton(
+                  onPressed: () => context.push(AppRoutes.realityCheck),
+                  child: const Text('View Reality Check'),
+                ),
             ],
             const SizedBox(height: 16),
             LoadingButton(
-              label: 'Run Reality Check',
+              label: revising ? 'Resubmit Reality Check' : 'Run Reality Check',
               onPressed: widget.analysisId == null ? null : _submit,
               loading: _busy,
             ),

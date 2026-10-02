@@ -7,14 +7,31 @@ import 'package:pathway_navigator/features/onboarding/presentation/onboarding_ch
 
 import '../support/fakes.dart';
 
-PathwayPlan plan({String status = 'ready', List<String> errors = const []}) => PathwayPlan.fromJson({
+PathwayPlan plan({
+  String? id = 'plan-1',
+  String status = 'ready',
+  List<String> errors = const [],
+  List<String> completedPhases = const [],
+  String stageStatus = 'not_started',
+}) =>
+    PathwayPlan.fromJson({
+      'id': id,
       'workflow_id': 'wf',
       'status': status,
       'selected_pathway': 'AI Engineer',
       'roadmap': [
-        {'order': 1, 'stage': 'foundation', 'title': 'Learn Python', 'outcome': 'x', 'actions': ['a'], 'estimated_duration': '2 months'},
+        {
+          'order': 1,
+          'stage': 'foundation',
+          'title': 'Learn Python',
+          'outcome': 'x',
+          'actions': ['a'],
+          'estimated_duration': '2 months',
+          'status': stageStatus,
+        },
       ],
       'missing_skills': <String>[],
+      'completed_phases': completedPhases,
       'next_action': 'Start',
       'validation_errors': errors,
     });
@@ -75,6 +92,29 @@ void main() {
 
       expect(controller.analysis!.status, AnalysisStatus.approved);
       expect(controller.analysis!.isDecided, isTrue);
+    });
+
+    test('loadSaved restores the latest saved analysis and roadmap', () async {
+      repository.analysis = fakeAnalysis();
+      repository.plan = plan(completedPhases: ['foundation'], stageStatus: 'completed');
+
+      await controller.loadSaved();
+
+      expect(controller.hasRun, isTrue);
+      expect(controller.plan, isNotNull);
+      expect(controller.plan!.completedCount, 1);
+      expect(controller.isLoadingSaved, isFalse);
+    });
+
+    test('toggleStage updates roadmap milestone progress', () async {
+      repository.plan = plan();
+      await controller.buildPlan('AI Engineer');
+
+      repository.plan = plan(completedPhases: ['foundation'], stageStatus: 'completed');
+      await controller.toggleStage('foundation');
+
+      expect(repository.lastCompletedPhases, ['foundation']);
+      expect(controller.plan!.completedCount, 1);
     });
   });
 
@@ -149,12 +189,14 @@ void main() {
 
     test('ProfileSlots round-trips the snake_case agent payload', () {
       final slots = ProfileSlots.fromJson({
+        'full_name': 'Nimal Perera',
         'academic_stage': 'After A/L',
         'core_skills': ['Python'],
         'hobbies_interests': <String>[],
         'career_ambitions': null,
       });
       expect(slots.filledCount, 2);
+      expect(slots.fullName, 'Nimal Perera');
       expect(slots.toJson()['core_skills'], ['Python']);
     });
   });
@@ -162,5 +204,15 @@ void main() {
   test('PathwayAnalysis flags failed analyses', () {
     expect(fakeAnalysis(status: 'failed').failed, isTrue);
     expect(fakeAnalysis().failed, isFalse);
+  });
+
+  test('PathwayRecommendation parses enriched deep-dive, project, certification and SL route fields', () {
+    final rec = fakeAnalysis().recommendations.single;
+    expect(rec.hasDeepDive, isTrue);
+    expect(rec.salaryRangeLkr, contains('LKR'));
+    expect(rec.industryTools, contains('PyTorch'));
+    expect(rec.portfolioProjects, contains('RAG Assistant'));
+    expect(rec.recommendedCertifications, isNotEmpty);
+    expect(rec.sriLankanEducationRoutes.single, contains('SLIIT'));
   });
 }

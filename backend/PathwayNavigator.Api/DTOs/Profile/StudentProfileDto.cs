@@ -13,6 +13,9 @@ namespace PathwayNavigator.Api.DTOs.Profile
         public List<string> CoreSkills { get; set; } = new();
         public List<string> HobbiesInterests { get; set; } = new();
         public string CareerAmbitions { get; set; } = string.Empty;
+        public string AlStream { get; set; } = string.Empty;
+        public string AlResults { get; set; } = string.Empty;
+        public string BudgetLevel { get; set; } = "Medium";
         public bool IsOnboardingCompleted { get; set; }
         public string OnboardingMethod { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }

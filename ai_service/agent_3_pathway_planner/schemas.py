@@ -32,6 +32,7 @@ class PlannerResponse(BaseModel):
     selected_pathway: str
     roadmap: List[RoadmapStage] = Field(default_factory=list)
     missing_skills: List[str] = Field(default_factory=list)
+    completed_phases: List[str] = Field(default_factory=list)
     next_action: str = ""
     validation_errors: List[str] = Field(default_factory=list)
     execution_trace: List[dict] = Field(default_factory=list)

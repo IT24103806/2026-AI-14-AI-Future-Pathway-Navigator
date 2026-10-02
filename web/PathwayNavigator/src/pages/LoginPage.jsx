@@ -5,6 +5,8 @@ import FormInput from '../components/common/FormInput';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import GoogleSignInButton from '../components/common/GoogleSignInButton';
+import AuthLayout from '../components/common/AuthLayout';
+import { isGoogleSignInEnabled } from '../config/features';
 import { dashboardPathForRole } from '../utils/roleRoutes';
 
 const LoginPage = () => {
@@ -84,97 +86,99 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="auth-page-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-icon-badge">🔑</div>
-          <h2>Welcome Back</h2>
-          <p>Sign in to access your PathwayNavigator account</p>
-        </div>
+    <AuthLayout>
+      <div className="auth-header">
+        <div className="auth-icon-badge">🔑</div>
+        <h2>Welcome Back</h2>
+        <p>Sign in to access your PathwayNavigator account</p>
+      </div>
 
-        <AlertBanner
-          type="error"
-          message={apiError}
-          onClose={() => setApiError('')}
-        />
+      <AlertBanner
+        type="error"
+        message={apiError}
+        onClose={() => setApiError('')}
+      />
 
-        {/* Google Authentication */}
-        <div className="google-auth-section">
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            disabled={isSubmitting}
-            text="signin_with"
-          />
-        </div>
-
-        <div className="auth-divider">
-          <span>or sign in with email</span>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate className="auth-form">
-          <FormInput
-            id="login-email"
-            label="Email Address"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="e.g. student@example.com"
-            error={errors.email}
-            required
-            autoComplete="email"
-          />
-
-          <div className="form-group-with-link">
-            <FormInput
-              id="login-password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              error={errors.password}
-              required
-              autoComplete="current-password"
-            >
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '👁️' : '🙈'}
-              </button>
-            </FormInput>
-            <div className="forgot-password-wrapper">
-              <Link to="/forgot-password" className="forgot-password-link">
-                Forgot password?
-              </Link>
-            </div>
+      {/* Google Authentication (hidden while VITE_GOOGLE_CLIENT_ID is not configured) */}
+      {isGoogleSignInEnabled && (
+        <>
+          <div className="google-auth-section">
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              disabled={isSubmitting}
+              text="signin_with"
+            />
           </div>
 
-          <PrimaryButton
-            type="submit"
-            isLoading={isSubmitting}
-            disabled={isSubmitting}
-            className="w-full"
-          >
-            Sign In
-          </PrimaryButton>
-        </form>
+          <div className="auth-divider">
+            <span>or sign in with email</span>
+          </div>
+        </>
+      )}
 
-        <div className="auth-footer">
-          <p>
-            Don't have an account?{' '}
-            <Link to="/register" className="auth-link">
-              Create an Account
+      <form onSubmit={handleSubmit} noValidate className="auth-form">
+        <FormInput
+          id="login-email"
+          label="Email Address"
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="e.g. student@example.com"
+          error={errors.email}
+          required
+          autoComplete="email"
+        />
+
+        <div className="form-group-with-link">
+          <FormInput
+            id="login-password"
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Enter your password"
+            error={errors.password}
+            required
+            autoComplete="current-password"
+          >
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? '👁️' : '🙈'}
+            </button>
+          </FormInput>
+          <div className="forgot-password-wrapper">
+            <Link to="/forgot-password" className="forgot-password-link">
+              Forgot password?
             </Link>
-          </p>
+          </div>
         </div>
+
+        <PrimaryButton
+          type="submit"
+          isLoading={isSubmitting}
+          disabled={isSubmitting}
+          className="w-full"
+        >
+          Sign In
+        </PrimaryButton>
+      </form>
+
+      <div className="auth-footer">
+        <p>
+          Don't have an account?{' '}
+          <Link to="/register" className="auth-link">
+            Create an Account
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

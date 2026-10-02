@@ -1,19 +1,44 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitStandardOnboardingApi } from '../../api/onboardingApi';
+import { updateStudentProfileApi } from '../../api/profileApi';
 import PrimaryButton from '../common/PrimaryButton';
 import AlertBanner from '../common/AlertBanner';
 
-const StandardOnboardingForm = () => {
-  const [formData, setFormData] = useState({
-    academicStage: 'Undergraduate',
-    coreSkillsInput: '',
-    coreSkills: ['Python', 'Problem Solving'],
-    hobbiesInput: '',
-    hobbiesInterests: ['AI', 'Gaming'],
-    careerAmbitions: '',
-  });
+const DEFAULT_SKILLS = ['Python', 'Problem Solving'];
+const DEFAULT_INTERESTS = ['AI', 'Gaming'];
 
+const buildInitialFormData = (mode, initialProfile) => {
+  const isUpdateMode = mode === 'update';
+
+  return {
+    fullName: initialProfile?.fullName || '',
+    academicStage: initialProfile?.academicStage || 'Undergraduate',
+    coreSkillsInput: '',
+    coreSkills: initialProfile?.coreSkills?.length
+      ? [...initialProfile.coreSkills]
+      : isUpdateMode
+        ? []
+        : DEFAULT_SKILLS,
+    hobbiesInput: '',
+    hobbiesInterests: initialProfile?.hobbiesInterests?.length
+      ? [...initialProfile.hobbiesInterests]
+      : isUpdateMode
+        ? []
+        : DEFAULT_INTERESTS,
+    careerAmbitions: initialProfile?.careerAmbitions || '',
+  };
+};
+
+/**
+ * Manual profile form. In `create` mode it completes onboarding; in `update` mode (reached from
+ * the dashboard's "Re-run AI onboarding") it is pre-filled with the saved profile and writes the
+ * changes back through PUT /api/profile, which only touches the fields that were sent.
+ */
+const StandardOnboardingForm = ({ mode = 'create', initialProfile = null }) => {
+  const isUpdateMode = mode === 'update';
+
+  const [formData, setFormData] = useState(() => buildInitialFormData(mode, initialProfile));
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +89,14 @@ const StandardOnboardingForm = () => {
 
   const validateForm = () => {
     const newErrors = {};
+    const fullName = formData.fullName.trim();
+
+    if (!fullName) {
+      newErrors.fullName = 'Please tell us your full name so we can personalise your dashboard.';
+    } else if (fullName.length < 2) {
+      newErrors.fullName = 'Your full name must be at least 2 characters long.';
+    }
+
     if (!formData.academicStage) {
       newErrors.academicStage = 'Please select your academic stage.';
     }
@@ -88,17 +121,25 @@ const StandardOnboardingForm = () => {
     setIsSubmitting(true);
     setApiError('');
 
+    const payload = {
+      fullName: formData.fullName.trim(),
+      academicStage: formData.academicStage,
+      coreSkills: formData.coreSkills,
+      hobbiesInterests: formData.hobbiesInterests,
+      careerAmbitions: formData.careerAmbitions.trim(),
+    };
+
     try {
-      await submitStandardOnboardingApi({
-        academicStage: formData.academicStage,
-        coreSkills: formData.coreSkills,
-        hobbiesInterests: formData.hobbiesInterests,
-        careerAmbitions: formData.careerAmbitions.trim(),
-        onboardingMethod: 'StandardForm',
-      });
+      if (isUpdateMode) {
+        // Partial update: the student's saved reality-check context (A/L stream, results, budget)
+        // is left untouched because those fields are simply not sent.
+        await updateStudentProfileApi(payload);
+      } else {
+        await submitStandardOnboardingApi({ ...payload, onboardingMethod: 'StandardForm' });
+      }
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setApiError(err.message || 'Failed to save onboarding details.');
+      setApiError(err.message || 'Failed to save your profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -107,8 +148,12 @@ const StandardOnboardingForm = () => {
   return (
     <div className="standard-form-container">
       <div className="standard-form-header">
-        <h3>Manual Profile Completion</h3>
-        <p>Fill out your details below if you prefer a structured form over the AI chat.</p>
+        <h3>{isUpdateMode ? 'Update your profile details' : 'Manual Profile Completion'}</h3>
+        <p>
+          {isUpdateMode
+            ? 'Your saved details are pre-filled. Change anything that has moved on and save — your name, academic stage, skills, interests and career ambition all live in your student profile.'
+            : 'Fill out your details below if you prefer a structured form over the AI chat.'}
+        </p>
       </div>
 
       <AlertBanner
@@ -118,6 +163,26 @@ const StandardOnboardingForm = () => {
       />
 
       <form onSubmit={handleSubmit} noValidate className="auth-form">
+        <div className="form-group">
+          <label htmlFor="fullName" className="form-label">
+            Full Name <span className="required-star">*</span>
+          </label>
+          <input
+            id="fullName"
+            name="fullName"
+            type="text"
+            autoComplete="name"
+            placeholder="e.g. Nimal Perera"
+            value={formData.fullName}
+            onChange={(e) => {
+              setFormData({ ...formData, fullName: e.target.value });
+              if (errors.fullName) setErrors({ ...errors, fullName: '' });
+            }}
+            className="form-input"
+          />
+          {errors.fullName && <p className="form-error">{errors.fullName}</p>}
+        </div>
+
         <div className="form-group">
           <label htmlFor="academicStage" className="form-label">
             Academic Stage <span className="required-star">*</span>
@@ -222,7 +287,7 @@ const StandardOnboardingForm = () => {
           disabled={isSubmitting}
           className="w-full"
         >
-          Save & Access Dashboard →
+          {isUpdateMode ? 'Save Profile Changes' : 'Save & Access Dashboard →'}
         </PrimaryButton>
       </form>
     </div>

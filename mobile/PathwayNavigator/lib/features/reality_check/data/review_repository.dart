@@ -6,6 +6,8 @@ import 'review_models.dart';
 abstract interface class ReviewRepository {
   Future<PathwayReview> startRealityCheck(String analysisId, RealityCheckInput input);
 
+  Future<PathwayReview> resubmitRealityCheck(String reviewId, RealityCheckInput input);
+
   /// Latest review for the signed-in student, or null when none exists (HTTP 404).
   Future<PathwayReview?> getMyStatus();
 
@@ -27,6 +29,10 @@ class RemoteReviewRepository implements ReviewRepository {
   @override
   Future<PathwayReview> startRealityCheck(String analysisId, RealityCheckInput input) async =>
       PathwayReview.fromJson(asMap(await _api.post('/counsellor-review/analysis/$analysisId/evaluate', body: input.toJson())));
+
+  @override
+  Future<PathwayReview> resubmitRealityCheck(String reviewId, RealityCheckInput input) async =>
+      PathwayReview.fromJson(asMap(await _api.post('/counsellor-review/$reviewId/resubmit', body: input.toJson())));
 
   @override
   Future<PathwayReview?> getMyStatus() async {

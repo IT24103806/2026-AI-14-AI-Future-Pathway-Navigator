@@ -1,0 +1,569 @@
+/* =============================================================================
+   PathwayNavigator · Career Discovery, pathway cards & roadmap tracker
+   ============================================================================= */
+
+.career-page-container {
+  width: min(100%, var(--container-max));
+  margin-inline: auto;
+  padding: clamp(1.25rem, 2.5vw, 2.25rem) var(--gutter) clamp(3rem, 5vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.career-page-container .onboarding-hero { text-align: center; }
+
+.career-onboarding-nudge {
+  display: flex;
+  justify-content: center;
+  margin-top: -0.5rem;
+}
+
+/* Loading state ------------------------------------------------------------ */
+.career-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 1.5rem;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--glass-border);
+  background: var(--glass-1);
+}
+
+.career-loading-state h3 { font-size: var(--fs-xl); }
+.career-loading-state p { max-width: 62ch; color: var(--text-dim); font-size: var(--fs-md); }
+
+/* ===========================================================================
+   How it works cards
+   =========================================================================== */
+.how-it-works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.how-it-works-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(155deg, var(--glass-2), var(--glass-1));
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: var(--shadow-sm), var(--glass-inner);
+  transition: var(--transition);
+  animation: cardFadeInUp var(--dur-slow) var(--ease-out) both;
+}
+
+.how-it-works-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--shadow-lg), var(--glass-inner);
+}
+
+.how-it-works-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 0.9rem;
+  border-radius: 18px;
+  font-size: 1.5rem;
+  background: linear-gradient(150deg, rgba(34, 211, 238, 0.22), rgba(91, 140, 255, 0.2));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.how-it-works-card h4 { font-size: var(--fs-lg); margin-bottom: 0.4rem; }
+.how-it-works-card p { color: var(--text-muted); font-size: var(--fs-md); }
+
+/* ===========================================================================
+   Results section
+   =========================================================================== */
+.career-results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.career-results-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.career-results-header h2 { font-size: var(--fs-2xl); }
+.career-results-header small { display: block; margin-top: 0.3rem; }
+
+/* Pathway cards grid ------------------------------------------------------- */
+.pathway-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.pathway-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(1.2rem, 2vw, 1.6rem);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(160deg, var(--glass-2), var(--glass-1));
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  box-shadow: var(--shadow-md), var(--glass-inner);
+  animation: cardFadeInUp var(--dur-slow) var(--ease-out) both;
+  transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+
+.pathway-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--shadow-lg), var(--glass-inner);
+}
+
+.pathway-card-top {
+  border-color: rgba(91, 140, 255, 0.5);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(34, 211, 238, 0.16), transparent 55%),
+    linear-gradient(160deg, var(--glass-3), var(--glass-1));
+  box-shadow: 0 34px 80px -34px rgba(91, 140, 255, 0.85), var(--glass-inner);
+}
+
+.pathway-card-ribbon {
+  position: absolute;
+  top: 1.1rem;
+  right: -2.4rem;
+  transform: rotate(38deg);
+  padding: 0.32rem 2.6rem;
+  background: var(--gradient-brand);
+  color: #fff;
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+.pathway-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pathway-card-header > div { min-width: 0; display: flex; flex-direction: column; gap: 0.45rem; align-items: flex-start; }
+
+.pathway-name {
+  font-size: var(--fs-xl);
+  line-height: 1.25;
+  margin-top: 0.15rem;
+}
+
+.pathway-meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: var(--glass-1);
+}
+
+.pathway-badges-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+.pathway-reasoning {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  line-height: 1.62;
+  padding-left: 0.9rem;
+  border-left: 2px solid rgba(91, 140, 255, 0.45);
+}
+
+.pathway-courses { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.pathway-courses h4,
+.missing-skills-panel h4,
+.roadmap-timeline h4 {
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.missing-skills-panel {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--warning-border);
+  background: var(--warning-soft);
+}
+
+.missing-skills-panel h4 { color: var(--warning); }
+
+.missing-skills-empty {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+}
+
+.missing-skills-empty h4 { color: var(--success); }
+.missing-skills-empty p { margin-top: 0.35rem; color: var(--text-muted); font-size: var(--fs-sm); }
+
+/* Roadmap timeline (inside pathway card) ----------------------------------- */
+.roadmap-timeline { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.roadmap-steps { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.roadmap-step {
+  display: flex;
+  gap: 0.85rem;
+  animation: fadeInLeft var(--dur) var(--ease-out) both;
+}
+
+.roadmap-step-marker { position: relative; display: flex; flex-direction: column; align-items: center; }
+
+.roadmap-step-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-2);
+  font-size: 1rem;
+  box-shadow: var(--glass-inner);
+}
+
+.roadmap-step-line {
+  flex: 1;
+  width: 2px;
+  margin: 0.35rem 0;
+  background: linear-gradient(180deg, rgba(91, 140, 255, 0.65), rgba(91, 140, 255, 0.05));
+  border-radius: 2px;
+}
+
+.roadmap-step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0 1rem;
+}
+
+.roadmap-step-phase {
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+}
+
+.roadmap-step-course { font-size: var(--fs-sm); color: var(--text-muted); }
+
+/* Card action button ------------------------------------------------------- */
+.pathway-card > .btn:last-child { align-self: flex-start; }
+
+/* ===========================================================================
+   Deep dive drawer
+   =========================================================================== */
+.career-deep-dive-container {
+  border-top: 1px solid var(--divider);
+  padding-top: 0.9rem;
+}
+
+.deep-dive-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(91, 140, 255, 0.36);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.deep-dive-toggle-btn:hover { background: rgba(91, 140, 255, 0.22); transform: translateY(-1px); }
+.deep-dive-chevron { font-size: 0.7rem; }
+
+.career-deep-dive-panel {
+  margin-top: 0.9rem;
+  padding: 1.05rem;
+  border-radius: var(--radius-md);
+  background: var(--glass-2);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeInUp var(--dur) var(--ease-out) both;
+}
+
+.deep-dive-section h5 {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-cyan);
+  margin-bottom: 0.4rem;
+}
+
+.deep-dive-section p { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.6; }
+
+.deep-dive-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.deep-dive-list li + li { margin-top: 0.35rem; }
+.sl-routes-list li { color: var(--text-main); font-weight: 500; }
+
+/* ===========================================================================
+   Agent 4 Reality Check form (on the discovery page)
+   =========================================================================== */
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] {
+  max-width: 100%;
+  padding: clamp(1.35rem, 2.6vw, 2.25rem);
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] > p {
+  max-width: 72ch;
+  margin-bottom: 1.35rem;
+  color: var(--text-muted);
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] label:first-child,
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] label:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] input,
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] select {
+  width: 100%;
+  min-height: 50px;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-1);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 400;
+  outline: none;
+  transition: var(--transition);
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] input::placeholder { color: var(--text-dim); }
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] input:focus,
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] select:focus {
+  border-color: rgba(91, 140, 255, 0.7);
+  box-shadow: var(--ring);
+  background: var(--glass-2);
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] form button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 50px;
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] p[role='status'] {
+  margin: 1.25rem 0 0;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-sm);
+  background: var(--info-soft);
+  color: var(--text-main);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+}
+
+.career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] p[role='status'] a {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ===========================================================================
+   Agent 3 roadmap tracker
+   =========================================================================== */
+.saved-plans-switcher {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.roadmap-progress-summary-card {
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(155deg, var(--glass-2), var(--glass-1));
+  backdrop-filter: blur(20px) saturate(165%);
+  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  box-shadow: var(--shadow-md), var(--glass-inner);
+}
+
+.roadmap-progress-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.roadmap-progress-bar { width: 100%; accent-color: var(--brand-blue); }
+
+.roadmap-stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  text-align: left;
+}
+
+.roadmap-stage-card h3 { font-size: var(--fs-lg); }
+.roadmap-stage-card p { font-size: var(--fs-sm); }
+
+.roadmap-stage-completed {
+  border-color: var(--success-border);
+  background: linear-gradient(155deg, rgba(52, 211, 153, 0.14), var(--glass-1));
+}
+
+.roadmap-stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.roadmap-stage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--divider);
+}
+
+.stage-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.stage-checkbox-label input[type='checkbox'] { width: 18px; height: 18px; }
+
+/* ===========================================================================
+   Responsive
+   =========================================================================== */
+@media (max-width: 720px) {
+  .career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] form { grid-template-columns: 1fr; }
+
+  .career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] label:first-child,
+  .career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] label:nth-child(5),
+  .career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] form button {
+    grid-column: 1;
+  }
+
+  .career-page-container .reality-panel[aria-label='Agent 4 Reality Check'] form button { width: 100%; }
+  .pathway-card-ribbon { font-size: 0.6rem; padding: 0.28rem 2.6rem; }
+  .career-results-header { align-items: flex-start; }
+}
+
+.roadmap-progress-section {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--divider);
+  margin-top: 0.5rem;
+}
+
+/* Streaming "agent at work" indicator during analysis */
+.analysis-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 0.85rem;
+  list-style: none;
+  padding: 0;
+  margin-top: 0.6rem;
+}
+
+.analysis-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-1);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  animation: analysisStep 2.7s var(--ease-in-out) infinite;
+}
+
+.analysis-step__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background var(--dur) var(--ease-out);
+}
+
+@keyframes analysisStep {
+  0%, 12% {
+    border-color: rgba(91, 140, 255, 0.7);
+    background: linear-gradient(120deg, rgba(34, 211, 238, 0.16), rgba(91, 140, 255, 0.2));
+    color: var(--text-main);
+    box-shadow: var(--shadow-glow);
+  }
+  33%, 100% {
+    border-color: var(--glass-border);
+    background: var(--glass-1);
+    color: var(--text-dim);
+    box-shadow: none;
+  }
+}
+
+.analysis-step:nth-child(1) { animation-delay: 0s; }
+.analysis-step:nth-child(2) { animation-delay: 0.9s; }
+.analysis-step:nth-child(3) { animation-delay: 1.8s; }

@@ -145,5 +145,43 @@ namespace PathwayNavigator.Tests
 
             Assert.IsType<NotFoundObjectResult>(result);
         }
+
+        [Fact]
+        public async Task GetLatest_ReturnsNotFound_WhenNoAnalysisExists()
+        {
+            _analysisService.Setup(s => s.GetLatestForUserAsync(_userId)).ReturnsAsync((PathwayAnalysisResponseDto?)null);
+
+            var result = await BuildController().GetLatest();
+
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetLatest_ReturnsOk_WhenAnalysisExists()
+        {
+            var dto = new PathwayAnalysisResponseDto { Id = Guid.NewGuid(), WorkflowId = "wf-latest", Status = "pending_approval" };
+            _analysisService.Setup(s => s.GetLatestForUserAsync(_userId)).ReturnsAsync(dto);
+
+            var result = await BuildController().GetLatest();
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Same(dto, okResult.Value);
+        }
+
+        [Fact]
+        public async Task GetHistory_ReturnsOk_WithSavedAnalyses()
+        {
+            var list = new List<PathwayAnalysisResponseDto>
+            {
+                new() { Id = Guid.NewGuid(), WorkflowId = "wf-2", Status = "approved" },
+                new() { Id = Guid.NewGuid(), WorkflowId = "wf-1", Status = "rejected" }
+            };
+            _analysisService.Setup(s => s.GetHistoryForUserAsync(_userId)).ReturnsAsync(list);
+
+            var result = await BuildController().GetHistory();
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Same(list, okResult.Value);
+        }
     }
 }

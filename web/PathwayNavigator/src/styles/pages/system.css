@@ -1,0 +1,109 @@
+/* =============================================================================
+   PathwayNavigator · System states (404, access denied, boot splash)
+   ============================================================================= */
+
+.not-found-container,
+.unauthorized-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2.5rem, 6vw, 5rem) var(--gutter);
+}
+
+.not-found-card,
+.unauthorized-card {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 620px);
+  padding: clamp(2rem, 4vw, 3rem);
+  text-align: center;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(160deg, var(--glass-3), var(--glass-1));
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: var(--shadow-lg), var(--glass-inner);
+  animation: popIn var(--dur-slow) var(--ease-spring) both;
+}
+
+.not-found-card h2 { font-size: var(--fs-2xl); margin-bottom: 0.5rem; }
+.not-found-card p,
+.unauthorized-container p { color: var(--text-muted); font-size: var(--fs-lg); }
+.not-found-card .btn { margin-top: 1.5rem; }
+
+.not-found-code {
+  font-family: var(--font-display);
+  font-size: clamp(4.5rem, 3rem + 12vw, 9rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+  animation: floaty 6s var(--ease-in-out) infinite;
+}
+
+.unauthorized-container {
+  flex-direction: column;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.unauthorized-container h2 { font-size: var(--fs-2xl); }
+
+/* Boot splash rendered before React mounts (inside #root in index.html) ----- */
+.boot-splash {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  background: var(--bg-base);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+
+.boot-splash__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.boot-splash__mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 1.8rem;
+  background: linear-gradient(120deg, #22d3ee, #5b8cff 45%, #a855f7);
+  box-shadow: 0 24px 50px -24px rgba(91, 140, 255, 1);
+  animation: floaty 3s ease-in-out infinite;
+}
+
+.boot-splash__bar {
+  width: 180px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.boot-splash__bar::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22d3ee, #5b8cff, #a855f7);
+  animation: bootSlide 1.3s ease-in-out infinite;
+}
+
+@keyframes bootSlide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}

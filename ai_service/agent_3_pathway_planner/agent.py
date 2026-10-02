@@ -16,24 +16,47 @@ def _find_pathway(name: str) -> dict | None:
 
 def _build_stages(pathway: dict, profile: PlannerRequest, missing_skills: list[str]) -> list[RoadmapStage]:
     courses = pathway["recommended_courses"]
-    completed = {phase.casefold() for phase in profile.completed_phases}
+    sl_routes = pathway.get("sri_lankan_education_routes", [])
+    projects = pathway.get("portfolio_projects", [])
+    certs = pathway.get("recommended_certifications", [])
+    tools = pathway.get("industry_tools", [])
+    completed = {phase.strip().casefold() for phase in profile.completed_phases if phase and phase.strip()}
+
+    education_actions = [
+        f"Compare accredited degree, diploma, and foundation options for {pathway['pathway_name']}.",
+    ]
+    if sl_routes:
+        education_actions.append(f"Sri Lankan routes: {sl_routes[0]} | {sl_routes[-1]}.")
+    education_actions.append("Confirm entry requirements, duration, and total cost before enrolling.")
+
+    skill_actions = [f"Study {courses[0]}."]
+    if missing_skills:
+        skill_actions.append(f"Focus on closing your missing prerequisite skills: {', '.join(missing_skills)}.")
+    if projects:
+        skill_actions.append(f"Build starter portfolio project: {projects[0]}.")
+    else:
+        skill_actions.append(f"Practice through two portfolio projects related to {pathway['description'].lower()}")
+
+    cert_actions = [f"Complete {courses[1]}."]
+    if certs:
+        cert_actions.append(f"Prepare for industry certification: {certs[0]}.")
+    if len(projects) > 1:
+        cert_actions.append(f"Publish capstone project evidence: {projects[1]}.")
+    else:
+        cert_actions.append("Publish project evidence and document the tools used.")
+
+    internship_actions = [
+        "Apply to internships that mention the pathway title and your completed skills.",
+    ]
+    if tools:
+        internship_actions.append(f"Demonstrate hands-on proficiency with industry tools: {', '.join(tools[:5])}.")
+    internship_actions.append("Ask for feedback and turn one internship project into a portfolio case study.")
+
     stages = [
-        ("education", "Build the education foundation", [
-            f"Compare accredited degree, diploma, and foundation options for {pathway['pathway_name']}.",
-            "Confirm entry requirements, duration, and total cost before enrolling.",
-        ], "3-4 years"),
-        ("skills", "Close the core skill gaps", [
-            f"Study {courses[0]}.",
-            f"Practice through two portfolio projects related to {pathway['description'].lower()}",
-        ], "3-6 months"),
-        ("certification", "Add evidence of readiness", [
-            f"Complete {courses[1]}.",
-            "Publish project evidence and document the tools used.",
-        ], "3-6 months"),
-        ("internship", "Get supervised industry experience", [
-            "Apply to internships that mention the pathway title and your completed skills.",
-            "Ask for feedback and turn one internship project into a portfolio case study.",
-        ], "3-6 months"),
+        ("education", "Build the education foundation", education_actions, "3-4 years"),
+        ("skills", "Close the core skill gaps", skill_actions, "3-6 months"),
+        ("certification", "Add evidence of readiness", cert_actions, "3-6 months"),
+        ("internship", "Get supervised industry experience", internship_actions, "3-6 months"),
         ("first_job", "Target the first relevant role", [
             f"Apply for junior {pathway['search_term']} roles.",
             "Tailor your CV to demonstrated skills instead of listing only course names.",
@@ -70,8 +93,19 @@ def build_roadmap_node(state: Dict[str, Any]) -> Dict[str, Any]:
     student_skills = {skill.strip().casefold() for skill in request.profile.core_skills}
     missing_skills = sorted(skill for skill in pathway["required_skills"] if skill.casefold() not in student_skills)
     roadmap = _build_stages(pathway, request, missing_skills)
-    next_stage = next((step for step in roadmap if step.status != "completed"), roadmap[-1])
-    return {"roadmap": roadmap, "missing_skills": missing_skills, "next_action": next_stage.actions[0]}
+    completed_phases = [step.stage for step in roadmap if step.status == "completed"]
+    next_stage = next((step for step in roadmap if step.status != "completed"), None)
+    next_action = (
+        next_stage.actions[0]
+        if next_stage is not None
+        else f"All roadmap milestones for {pathway['pathway_name']} are completed! Keep your portfolio and skills updated."
+    )
+    return {
+        "roadmap": roadmap,
+        "missing_skills": missing_skills,
+        "completed_phases": completed_phases,
+        "next_action": next_action,
+    }
 
 
 def finalize_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -118,6 +152,7 @@ def run_pathway_planner(request: PlannerRequest) -> PlannerResponse:
         "pathway": None,
         "roadmap": [],
         "missing_skills": [],
+        "completed_phases": [],
         "next_action": "",
         "validation_errors": [],
         "status": "failed",
@@ -129,6 +164,7 @@ def run_pathway_planner(request: PlannerRequest) -> PlannerResponse:
         selected_pathway=request.selected_pathway,
         roadmap=state.get("roadmap", []),
         missing_skills=state.get("missing_skills", []),
+        completed_phases=state.get("completed_phases", []),
         next_action=state.get("next_action", ""),
         validation_errors=state["validation_errors"],
         execution_trace=state["execution_trace"],

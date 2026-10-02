@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,7 @@ namespace PathwayNavigator.Api.Services
             await _context.SaveChangesAsync();
 
             agentResult.Id = entity.Id;
+            agentResult.CreatedAt = entity.CreatedAt;
             return agentResult;
         }
 
@@ -44,6 +46,30 @@ namespace PathwayNavigator.Api.Services
                 .FirstOrDefaultAsync(a => a.Id == id && a.StudentProfile!.UserId == userId);
 
             return entity == null ? null : MapToDto(entity);
+        }
+
+        public async Task<PathwayAnalysisResponseDto?> GetLatestForUserAsync(Guid userId)
+        {
+            var entity = await _context.PathwayAnalyses
+                .AsNoTracking()
+                .Include(a => a.StudentProfile)
+                .Where(a => a.StudentProfile!.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            return entity == null ? null : MapToDto(entity);
+        }
+
+        public async Task<IReadOnlyList<PathwayAnalysisResponseDto>> GetHistoryForUserAsync(Guid userId)
+        {
+            var entities = await _context.PathwayAnalyses
+                .AsNoTracking()
+                .Include(a => a.StudentProfile)
+                .Where(a => a.StudentProfile!.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
         }
 
         public async Task<PathwayAnalysisResponseDto?> SetStatusAsync(Guid id, Guid userId, string newStatus)
@@ -78,7 +104,8 @@ namespace PathwayNavigator.Api.Services
                 Id = entity.Id,
                 WorkflowId = entity.WorkflowId,
                 Status = entity.Status,
-                Recommendations = recommendations
+                Recommendations = recommendations,
+                CreatedAt = entity.CreatedAt
             };
         }
     }

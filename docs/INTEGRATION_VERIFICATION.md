@@ -15,15 +15,41 @@ FastAPI AI service (ai_service, :8000)  ── Agents 1-4 (LangGraph)
 | SPA call (`src/api/*`) | .NET endpoint | Python endpoint called by `AgentService` |
 |---|---|---|
 | `POST /auth/register`, `/auth/login`, `/auth/google`, `/auth/forgot-password`, `/auth/verify-reset-code`, `/auth/reset-password` | `AuthController` | – |
-| `GET /profile/status`, `GET/PUT /profile` | `ProfileController` | – |
-| `POST /onboarding/chat` | `OnboardingController.ChatWithAgent1` | `POST /api/v1/agent-1/chat` |
+| `GET /profile/status`, `GET /profile` | `ProfileController` | – |
+| `PUT /profile` (partial update: full name, stage, skills, interests, ambition, A/L context — used by "Re-run AI onboarding") | `ProfileController.UpdateProfile` | – |
+| `POST /onboarding/chat` (first run or profile update; forwards `update_mode` + `baseline_slots`) | `OnboardingController.ChatWithAgent1` | `POST /api/v1/agent-1/chat` |
 | `POST /onboarding/standard-form` | `OnboardingController.CompleteViaStandardForm` | – |
 | `POST /career-discovery/analyze` | `CareerDiscoveryController.Analyze` | `POST /api/v1/agent-2/analyze` |
-| `GET /career-discovery/{id}`, `PATCH …/approve`, `PATCH …/reject` | `CareerDiscoveryController` | – |
+| `GET /career-discovery/me/latest`, `/me/history`, `GET /career-discovery/{id}`, `PATCH …/approve`, `PATCH …/reject` | `CareerDiscoveryController` | – |
 | `POST /pathway-planner/plan` | `PathwayPlannerController.Plan` | `POST /api/v1/agent-3/plan` |
+| `GET /pathway-planner/me/latest`, `GET /pathway-planner/me`, `PATCH /pathway-planner/{id}/progress` | `PathwayPlannerController` | – |
 | `POST /counsellor-review/analysis/{id}/evaluate` | `CounsellorReviewController.StartRealityCheck` | `POST /api/v1/agent-4/evaluate` |
+| `POST /counsellor-review/{id}/resubmit` (student re-runs Agent 4 after `NeedsRevision`/`Rejected`/`Approved`; creates a new review row, blocked while `Pending`) | `CounsellorReviewController.ResubmitRealityCheck` | `POST /api/v1/agent-4/evaluate` |
 | `GET /counsellor-review/me/status`, `/me/history` | `CounsellorReviewController` (Student) | – |
 | `GET /counsellor-review`, `GET /{id}`, `POST /{id}/decision` | `CounsellorReviewController` (Counsellor/Admin) | – |
+
+## Profile update loop ("Re-run AI onboarding")
+
+* `GET /profile` returns the saved profile, `Users.FullName` included; the SPA loads it into the chat and the
+  standard form (`web/PathwayNavigator/src/pages/OnboardingPage.jsx`, `utils/profileSlots.js`).
+* `PUT /profile` accepts `UpdateStudentProfileDto`: **every field is optional**, so only what the student changed is
+  written to `StudentProfiles`, and `FullName` is written to `Users.FullName`. A null list keeps the stored list,
+  an empty list clears it. The A/L context (`alStream`, `alResults`, `budgetLevel`) stays untouched unless sent.
+* `/onboarding` shows the update experience whenever the student already finished onboarding (or when reached with
+  `?mode=update` from the dashboard), instead of redirecting straight back to the dashboard.
+* `POST /onboarding/chat` carries `update_mode` and `baseline_slots`. Agent 1 (and the .NET fallback, via
+  `AgentService.ApplyUpdateModeGuard`) only reports `is_complete` once something actually differs from the saved
+  profile, so a re-run never "finishes" without a change. See `docs/TRANSIENT_DB_FAILURES.md` for the other
+  resilience work and `ai_service/tests/test_agent_1.py` for the behaviour tests.
+
+## Reality Check pre-fill & resubmission loop
+
+* `StudentProfile` stores `AlStream`, `AlResults`, `BudgetLevel`; `PathwayReview` stores the submitted `AlStream`, `AlResults`,
+  `BudgetLevel` and `CurrentSkillsJson` (migration `20261002090000_AddRealityCheckProfileAndRevisionFields`).
+* Every successful Reality Check syncs those values (and merges new skills into `CoreSkills`) back to the profile, so
+  `GET /profile` and `GET /counsellor-review/me/status` both return the data needed to pre-fill the form on web and mobile.
+* `NeedsRevision`/`Rejected` open the pre-filled "Revise & resubmit" form automatically; missing skills are one-tap chips.
+  Resubmissions are audited as `RealityCheckResubmitted` (`FromStatus` = previous status). No AI-service contract change.
 
 ## Running everything locally
 

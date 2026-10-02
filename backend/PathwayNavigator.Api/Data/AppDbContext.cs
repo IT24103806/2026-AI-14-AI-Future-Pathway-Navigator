@@ -12,6 +12,7 @@ namespace PathwayNavigator.Api.Data
         public DbSet<VerificationCode> VerificationCodes { get; set; }
         public DbSet<StudentProfile> StudentProfiles { get; set; }
         public DbSet<PathwayAnalysis> PathwayAnalyses { get; set; }
+        public DbSet<PathwayPlan> PathwayPlans { get; set; }
 
         public DbSet<PathwayReview> PathwayReviews { get; set; }
         public DbSet<PathwayReviewAudit> PathwayReviewAudits { get; set; }
@@ -72,6 +73,17 @@ namespace PathwayNavigator.Api.Data
                 .WithMany()
                 .HasForeignKey(a => a.ApprovedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // A student profile can have persisted Agent 3 pathway plans with stage progress.
+            modelBuilder.Entity<PathwayPlan>()
+                .HasOne(p => p.StudentProfile)
+                .WithMany()
+                .HasForeignKey(p => p.StudentProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PathwayPlan>()
+                .HasIndex(p => new { p.StudentProfileId, p.UpdatedAt });
+            modelBuilder.Entity<PathwayPlan>()
+                .HasIndex(p => new { p.StudentProfileId, p.SelectedPathway });
 
             modelBuilder.Entity<PathwayReview>()
                 .HasIndex(r => r.WorkflowId)

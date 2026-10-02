@@ -72,12 +72,14 @@ def _score_pathway(pathway: dict, profile: StudentProfileInput) -> tuple[int, Li
     return round(total * 100), matched_skills, matched_interests, missing_skills
 
 
+def _get_pathway_def(pathway_name: str) -> dict:
+    return next((p for p in CAREER_PATHWAYS if p["pathway_name"] == pathway_name), {})
+
+
 def _build_roadmap(pathway_name: str) -> List[dict]:
     """Deterministic roadmap: zip each pathway's ordered recommended_courses
     with the fixed phase labels. No LLM involved -> no invented course order."""
-    courses = next(
-        (p["recommended_courses"] for p in CAREER_PATHWAYS if p["pathway_name"] == pathway_name), []
-    )
+    courses = _get_pathway_def(pathway_name).get("recommended_courses", [])
     return [
         {"phase": phase, "course": course}
         for phase, course in zip(ROADMAP_PHASE_LABELS, courses)
@@ -131,6 +133,30 @@ def market_data_node(state: Agent2State) -> Dict[str, Any]:
     return {"candidates": enriched}
 
 
+def _build_recommendation_from_kb(candidate: CareerCandidate, label: str, reasoning_text: str) -> CareerPathRecommendation:
+    md = candidate.market_data
+    kb_entry = _get_pathway_def(candidate.pathway_name)
+    return CareerPathRecommendation(
+        label=label,
+        pathway_name=candidate.pathway_name,
+        match_score=candidate.match_score,
+        demand_score=md.demand_score,
+        competition_score=md.competition_score,
+        trend=md.trend,
+        data_source=md.data_source,
+        reasoning=reasoning_text,
+        missing_skills=candidate.missing_skills,
+        recommended_courses=kb_entry.get("recommended_courses", []),
+        roadmap=_build_roadmap(candidate.pathway_name),
+        day_in_the_life=kb_entry.get("day_in_the_life", ""),
+        salary_range_lkr=kb_entry.get("salary_range_lkr", ""),
+        industry_tools=kb_entry.get("industry_tools", []),
+        portfolio_projects=kb_entry.get("portfolio_projects", []),
+        recommended_certifications=kb_entry.get("recommended_certifications", []),
+        sri_lankan_education_routes=kb_entry.get("sri_lankan_education_routes", []),
+    )
+
+
 def _fallback_reasoning(candidate: CareerCandidate, label: str) -> CareerPathRecommendation:
     md = candidate.market_data
     trend_phrase = {
@@ -144,22 +170,7 @@ def _fallback_reasoning(candidate: CareerCandidate, label: str) -> CareerPathRec
         f"Current market data shows a demand score of {md.demand_score}/100 with "
         f"competition around {md.competition_score}/100, and {trend_phrase}."
     )
-    return CareerPathRecommendation(
-        label=label,
-        pathway_name=candidate.pathway_name,
-        match_score=candidate.match_score,
-        demand_score=md.demand_score,
-        competition_score=md.competition_score,
-        trend=md.trend,
-        data_source=md.data_source,
-        reasoning=reasoning,
-        missing_skills=candidate.missing_skills,
-        recommended_courses=next(
-            (p["recommended_courses"] for p in CAREER_PATHWAYS if p["pathway_name"] == candidate.pathway_name),
-            [],
-        ),
-        roadmap=_build_roadmap(candidate.pathway_name),
-    )
+    return _build_recommendation_from_kb(candidate, label, reasoning)
 
 
 def reasoning_node(state: Agent2State) -> Dict[str, Any]:
@@ -195,22 +206,7 @@ def reasoning_node(state: Agent2State) -> Dict[str, Any]:
             if not reasoning_text:
                 recs.append(_fallback_reasoning(c, labels[i]))
                 continue
-            md = c.market_data
-            recs.append(CareerPathRecommendation(
-                label=labels[i],
-                pathway_name=c.pathway_name,
-                match_score=c.match_score,
-                demand_score=md.demand_score,
-                competition_score=md.competition_score,
-                trend=md.trend,
-                data_source=md.data_source,
-                reasoning=reasoning_text,
-                missing_skills=c.missing_skills,
-                recommended_courses=next(
-                    (p["recommended_courses"] for p in CAREER_PATHWAYS if p["pathway_name"] == c.pathway_name), []
-                ),
-                roadmap=_build_roadmap(c.pathway_name),
-            ))
+            recs.append(_build_recommendation_from_kb(c, labels[i], reasoning_text))
         return {"recommendations": recs}
     except Exception as e:
         print(f"[Agent2] LLM reasoning failed, using fallback: {e}")
@@ -255,6 +251,16 @@ def validation_node(state: Agent2State) -> Dict[str, Any]:
         source_candidate = candidate_by_name.get(rec.pathway_name)
         if source_candidate and set(rec.missing_skills) != set(source_candidate.missing_skills):
             errors.append(f"missing_skills for '{rec.pathway_name}' was altered from the matching step.")
+
+        # Enriched KB fields (projects, certifications, Sri Lankan routes) must match the curated KB if present.
+        kb_entry = _get_pathway_def(rec.pathway_name)
+        if kb_entry:
+            if rec.portfolio_projects and rec.portfolio_projects != kb_entry.get("portfolio_projects", []):
+                errors.append(f"portfolio_projects for '{rec.pathway_name}' was altered from the knowledge base.")
+            if rec.recommended_certifications and rec.recommended_certifications != kb_entry.get("recommended_certifications", []):
+                errors.append(f"recommended_certifications for '{rec.pathway_name}' was altered from the knowledge base.")
+            if rec.sri_lankan_education_routes and rec.sri_lankan_education_routes != kb_entry.get("sri_lankan_education_routes", []):
+                errors.append(f"sri_lankan_education_routes for '{rec.pathway_name}' was altered from the knowledge base.")
 
     return {"validation_errors": errors, "is_valid": len(errors) == 0}
 

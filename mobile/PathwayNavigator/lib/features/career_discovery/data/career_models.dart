@@ -24,6 +24,12 @@ class PathwayRecommendation {
     required this.missingSkills,
     required this.recommendedCourses,
     required this.roadmap,
+    this.dayInTheLife = '',
+    this.salaryRangeLkr = '',
+    this.industryTools = const <String>[],
+    this.portfolioProjects = const <String>[],
+    this.recommendedCertifications = const <String>[],
+    this.sriLankanEducationRoutes = const <String>[],
   });
 
   final String label;
@@ -37,8 +43,20 @@ class PathwayRecommendation {
   final List<String> missingSkills;
   final List<String> recommendedCourses;
   final List<RoadmapPhase> roadmap;
+  final String dayInTheLife;
+  final String salaryRangeLkr;
+  final List<String> industryTools;
+  final List<String> portfolioProjects;
+  final List<String> recommendedCertifications;
+  final List<String> sriLankanEducationRoutes;
 
   bool get isLiveData => dataSource == 'adzuna_live';
+  bool get hasDeepDive =>
+      dayInTheLife.isNotEmpty ||
+      industryTools.isNotEmpty ||
+      portfolioProjects.isNotEmpty ||
+      recommendedCertifications.isNotEmpty ||
+      sriLankanEducationRoutes.isNotEmpty;
 
   factory PathwayRecommendation.fromJson(Map<String, dynamic> json) => PathwayRecommendation(
         label: asString(json['label']),
@@ -52,6 +70,12 @@ class PathwayRecommendation {
         missingSkills: asStringList(json['missing_skills']),
         recommendedCourses: asStringList(json['recommended_courses']),
         roadmap: asMapList(json['roadmap']).map(RoadmapPhase.fromJson).toList(),
+        dayInTheLife: asString(json['day_in_the_life']),
+        salaryRangeLkr: asString(json['salary_range_lkr']),
+        industryTools: asStringList(json['industry_tools']),
+        portfolioProjects: asStringList(json['portfolio_projects']),
+        recommendedCertifications: asStringList(json['recommended_certifications']),
+        sriLankanEducationRoutes: asStringList(json['sri_lankan_education_routes']),
       );
 }
 
@@ -98,6 +122,7 @@ class RoadmapStage {
     required this.outcome,
     required this.actions,
     required this.estimatedDuration,
+    this.status = 'not_started',
   });
 
   final int order;
@@ -106,6 +131,9 @@ class RoadmapStage {
   final String outcome;
   final List<String> actions;
   final String estimatedDuration;
+  final String status;
+
+  bool get isCompleted => status == 'completed';
 
   factory RoadmapStage.fromJson(Map<String, dynamic> json) => RoadmapStage(
         order: asInt(json['order']),
@@ -114,6 +142,7 @@ class RoadmapStage {
         outcome: asString(json['outcome']),
         actions: asStringList(json['actions']),
         estimatedDuration: asString(json['estimated_duration']),
+        status: asString(json['status'], 'not_started'),
       );
 }
 
@@ -127,24 +156,31 @@ class PathwayPlan {
     required this.missingSkills,
     required this.nextAction,
     required this.validationErrors,
+    this.id,
+    this.completedPhases = const <String>[],
   });
 
+  final String? id;
   final String workflowId;
   final String status;
   final String selectedPathway;
   final List<RoadmapStage> roadmap;
   final List<String> missingSkills;
+  final List<String> completedPhases;
   final String nextAction;
   final List<String> validationErrors;
 
   bool get isReady => status == 'ready';
+  int get completedCount => roadmap.where((s) => s.isCompleted).length;
 
   factory PathwayPlan.fromJson(Map<String, dynamic> json) => PathwayPlan(
+        id: asNullableString(json['id']),
         workflowId: asString(json['workflow_id']),
         status: asString(json['status']),
         selectedPathway: asString(json['selected_pathway']),
         roadmap: asMapList(json['roadmap']).map(RoadmapStage.fromJson).toList(),
         missingSkills: asStringList(json['missing_skills']),
+        completedPhases: asStringList(json['completed_phases']),
         nextAction: asString(json['next_action']),
         validationErrors: asStringList(json['validation_errors']),
       );

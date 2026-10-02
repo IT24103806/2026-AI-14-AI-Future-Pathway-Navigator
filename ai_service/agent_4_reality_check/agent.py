@@ -9,59 +9,115 @@ from .schemas import ExecutionStep, RealityCheckRequest, RealityCheckResponse, T
 CAREER_REQUIREMENTS = {
     "software engineer": {
         "skills": ["Python", "OOP", "Data Structures", "Git", "Databases"],
-        "degree": "A computing degree is commonly preferred; an accredited diploma plus a strong portfolio is a viable alternative.",
+        "degree": "A computing degree is commonly preferred (e.g., State University BSc CS/SE, SLIIT BSc Hons in IT - Software Engineering, OUSL BSc SE, or UCSC/UoM BIT); an accredited TVEC NVQ Level 5/6 ICT diploma plus a strong portfolio is a viable alternative.",
         "subjects": ["Mathematics or equivalent foundation mathematics", "English/communication"],
-        "entry": ["Meet the selected institution's published entry criteria", "Complete a foundation route when direct entry is unavailable"],
-        "cost": {"Low": "Prioritise public, scholarship, vocational or part-time routes.", "Medium": "Compare public and local private computing programmes.", "High": "International/private routes may be considered after verifying total fees."},
+        "entry": [
+            "Meet the selected institution's published entry criteria (3 A/L passes for direct BSc entry)",
+            "Complete an accredited Computing Foundation or TVEC NVQ Level 4/5 route when transitioning from O/L or non-STEM streams",
+        ],
+        "cost": {
+            "Low": "Prioritise UGC state universities, OUSL BSc SE, UCSC/UoM BIT, SLIATE HNDIT, TVEC NVQ Level 5 routes, or the Government Interest-Free Student Loan Scheme (IFSLS).",
+            "Medium": "Compare local accredited private computing programmes (SLIIT, IIT, NSBM, NIBM) and merit scholarships.",
+            "High": "International or foreign-affiliated degree routes may be considered after verifying total tuition and living fees.",
+        },
     },
     "ai engineer": {
         "skills": ["Python", "Linear Algebra", "Machine Learning", "Statistics", "PyTorch"],
-        "degree": "A computing, data science or engineering degree with mathematics and AI/ML study is normally expected.",
+        "degree": "A computing, data science or engineering degree with mathematics and AI/ML study is normally expected (e.g., SLIIT BSc Hons in IT - AI / Data Science, or State University CS/Engineering).",
         "subjects": ["Mathematics", "Statistics", "Computing fundamentals"],
-        "entry": ["Meet degree mathematics requirements", "Build programming foundations before ML specialisation"],
-        "cost": {"Low": "Start with an affordable computing route and verified open ML courses.", "Medium": "Choose a local computing/data degree with an AI specialisation.", "High": "Compare accredited international AI programmes and living costs."},
+        "entry": [
+            "Meet degree mathematics requirements (Combined Maths or bridging foundation mathematics)",
+            "Build programming foundations before ML specialisation (or complete SLIIT Computing Foundation / NVQ Level 5 ICT bridge)",
+        ],
+        "cost": {
+            "Low": "Start with an affordable computing route (State University, OUSL, UCSC BIT, or IFSLS loan) and verified open ML courses (DeepLearning.AI / fast.ai).",
+            "Medium": "Choose a local computing/data degree with an AI specialisation (e.g., SLIIT BSc Hons AI/Data Science).",
+            "High": "Compare accredited international AI programmes, cloud GPU lab costs, and living expenses.",
+        },
     },
     "data scientist": {
         "skills": ["Python", "SQL", "Statistics", "Data Visualization", "Pandas"],
-        "degree": "A degree or equivalent training in data science, computing, mathematics or statistics is commonly preferred.",
+        "degree": "A degree or equivalent training in data science, computing, mathematics or statistics is commonly preferred (e.g., SLIIT BSc Hons Data Science, State University Statistics/CS, or OUSL/BIT).",
         "subjects": ["Mathematics", "Statistics", "Computing"],
-        "entry": ["Demonstrate quantitative ability", "Build a portfolio using real datasets"],
-        "cost": {"Low": "Combine an affordable quantitative qualification with portfolio projects.", "Medium": "Compare local data/computing degree routes.", "High": "Verify international programme fees and internship access."},
+        "entry": [
+            "Demonstrate quantitative ability (A/L Mathematics/Statistics or accredited foundation bridging module)",
+            "Build a portfolio using real datasets and SQL/Power BI dashboards",
+        ],
+        "cost": {
+            "Low": "Combine an affordable quantitative qualification (State University, OUSL, BIT, or NVQ Level 5) with portfolio projects.",
+            "Medium": "Compare local data/computing degree routes (SLIIT, IIT, NIBM Business Analytics).",
+            "High": "Verify international programme fees and internship access.",
+        },
     },
     "ui/ux designer": {
         "skills": ["Figma", "User Research", "Wireframing", "Prototyping", "Design Systems"],
-        "degree": "A design degree is useful but a verified portfolio and practical design training can provide an alternative route.",
+        "degree": "A design or interactive-media degree is useful (e.g., SLIIT BSc Interactive Media, UoM Bachelor of Design, AOD/AMDT), but a TVEC NVQ Level 5 Multimedia diploma and verified Figma portfolio provide a strong alternative route.",
         "subjects": ["Art/design awareness", "English/communication"],
-        "entry": ["Prepare a design portfolio", "Demonstrate user-centred design process"],
-        "cost": {"Low": "Use portfolio-led short courses and free design tools first.", "Medium": "Compare local design diplomas/degrees.", "High": "Verify private/international programme fees and portfolio support."},
+        "entry": [
+            "Prepare a 3-case-study user-centred design portfolio on Behance/Figma",
+            "Open to Arts, Commerce, Tech, and Science A/L streams or Foundation/NVQ Level 4/5 bridge entrants",
+        ],
+        "cost": {
+            "Low": "Use portfolio-led courses (Google UX Certificate), TVEC NVQ Level 5 Multimedia routes, and free Figma education tiers first.",
+            "Medium": "Compare local interactive media & design diplomas/degrees (SLIIT, NIBM, AMDT).",
+            "High": "Verify private/international design degree fees (AOD / foreign transfer) and portfolio mentorship.",
+        },
     },
     "cybersecurity analyst": {
         "skills": ["Networking", "Linux", "Security", "Python", "Problem Solving"],
-        "degree": "A computing, networking or information-security degree is commonly preferred; recognised security certifications can supplement it.",
+        "degree": "A computing, networking or information-security degree is commonly preferred (e.g., SLIIT BSc Hons Cyber Security); recognised security certifications (ISC2 CC, CompTIA Security+) and NVQ Level 5 Network Administration can supplement it.",
         "subjects": ["Mathematics or ICT foundation", "English/communication"],
-        "entry": ["Meet the selected institution's published entry criteria", "Build hands-on lab evidence (networking, Linux, ethical hacking basics)"],
-        "cost": {"Low": "Start with public/vocational routes and free security labs before paid certifications.", "Medium": "Compare local computing/security degrees and one entry-level certification.", "High": "Verify international programme fees and certification costs."},
+        "entry": [
+            "Meet the selected institution's published entry criteria or complete a Computing Foundation / NVQ Level 5 Network route",
+            "Build hands-on lab evidence (networking, Linux, SIEM, ethical hacking basics)",
+        ],
+        "cost": {
+            "Low": "Start with public/vocational routes (SLIATE HNDIT, OUSL, TVEC NVQ Level 5) and free ISC2 CC certification + TryHackMe labs.",
+            "Medium": "Compare local computing/security degrees (SLIIT, Cicra, NSBM) and one entry-level certification (CompTIA Security+).",
+            "High": "Verify international programme fees and advanced certification costs.",
+        },
     },
     "devops engineer": {
         "skills": ["Cloud", "Linux", "Git", "Networking", "Problem Solving"],
-        "degree": "A computing degree is commonly preferred; cloud-provider certifications and a deployment portfolio are a viable complement.",
+        "degree": "A computing or network-engineering degree is commonly preferred (e.g., SLIIT BSc Hons Computer Systems & Network Engineering); cloud certifications (AWS/Azure) and a CI/CD deployment portfolio are a viable complement.",
         "subjects": ["Mathematics or ICT foundation", "English/communication"],
-        "entry": ["Meet the selected institution's published entry criteria", "Deploy at least one project through a CI/CD pipeline"],
-        "cost": {"Low": "Use free-tier cloud accounts and open-source tooling while studying a public/vocational route.", "Medium": "Compare local computing programmes and one cloud certification.", "High": "Verify international programme fees and certification costs."},
+        "entry": [
+            "Meet the selected institution's published entry criteria or complete an NVQ Level 5/6 Systems & Network Diploma",
+            "Deploy at least one containerized project through a CI/CD pipeline",
+        ],
+        "cost": {
+            "Low": "Use free-tier cloud accounts (AWS Educate / Azure for Students) and open-source tooling alongside a public/NVQ/BIT route.",
+            "Medium": "Compare local computing programmes (SLIIT, IIT, NSBM) and one associate cloud certification.",
+            "High": "Verify international programme fees and multi-cloud certification costs.",
+        },
     },
     "mobile app developer": {
         "skills": ["Dart", "Flutter", "Java", "UI/UX", "Problem Solving"],
-        "degree": "A computing or software-engineering degree is commonly preferred; a published-app portfolio can supplement it.",
+        "degree": "A computing or software-engineering degree is commonly preferred (e.g., SLIIT BSc Hons Software Engineering, OUSL BSc SE, or UCSC BIT); a TVEC NVQ Level 5 Software Diploma plus a published-app portfolio can supplement it.",
         "subjects": ["Mathematics or equivalent foundation mathematics", "English/communication"],
-        "entry": ["Meet the selected institution's published entry criteria", "Publish or demo at least one working mobile app"],
-        "cost": {"Low": "Use free tooling (Flutter, Android Studio) alongside a public/vocational route.", "Medium": "Compare local software-engineering programmes.", "High": "Verify international programme fees and device/testing costs."},
+        "entry": [
+            "Meet the selected institution's published entry criteria or complete a Computing Foundation / NVQ Level 4/5 bridge",
+            "Publish or demo at least one working mobile app with clean architecture and tests",
+        ],
+        "cost": {
+            "Low": "Use free tooling (Flutter, Android Studio) alongside OUSL, BIT, SLIATE HNDIT, or TVEC NVQ Level 5 routes.",
+            "Medium": "Compare local software-engineering programmes (SLIIT, IIT, NIBM, NSBM).",
+            "High": "Verify international programme fees and iOS/Android hardware testing costs.",
+        },
     },
     "game developer": {
         "skills": ["C++", "C#", "Mathematics", "Problem Solving", "Game Engines"],
-        "degree": "A computing or game-development degree is commonly preferred; a playable portfolio is essential.",
+        "degree": "A computing, interactive-media, or game-development degree is commonly preferred (e.g., SLIIT BSc Hons Interactive Media / SE); a playable portfolio on itch.io/Steam is essential.",
         "subjects": ["Mathematics", "Computing fundamentals"],
-        "entry": ["Meet the selected institution's published entry criteria", "Build and publish at least one playable prototype"],
-        "cost": {"Low": "Use free engines (Unity/Godot) and a public/vocational computing route.", "Medium": "Compare local computing/game-design programmes.", "High": "Verify international programme fees and hardware costs."},
+        "entry": [
+            "Meet the selected institution's published entry criteria or complete a Foundation / NVQ Level 5 Multimedia & Game Design route",
+            "Build and publish at least one playable 2D/3D prototype",
+        ],
+        "cost": {
+            "Low": "Use free engines (Unity Personal / Godot / Blender) and a public/BIT/NVQ computing route.",
+            "Medium": "Compare local interactive media and computing programmes (SLIIT, AMDT, IIT).",
+            "High": "Verify international game-design programme fees and GPU workstation hardware costs.",
+        },
     },
 }
 
