@@ -105,7 +105,7 @@ class PathwayCard extends StatelessWidget {
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 title: const Text('Career deep-dive, projects & SL routes'),
-                childrenCrossAxisAlignment: CrossAxisAlignment.start,
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (rec.dayInTheLife.isNotEmpty) ...[
                     Text('Day in the life', style: theme.textTheme.titleSmall),
