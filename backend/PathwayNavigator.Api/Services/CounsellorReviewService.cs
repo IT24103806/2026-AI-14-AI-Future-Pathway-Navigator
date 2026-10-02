@@ -147,15 +147,23 @@ public class CounsellorReviewService : ICounsellorReviewService
             profile.UpdatedAt = DateTime.UtcNow;
         }
 
-        await using var transaction = _context.Database.IsRelational()
-            ? await _context.Database.BeginTransactionAsync()
-            : null;
-        _context.PathwayReviews.Add(row);
-        await _context.SaveChangesAsync();
-        if (transaction != null)
+        // A user-initiated transaction has to be executed through the configured execution strategy,
+        // otherwise EF refuses to open it once transient-failure retries (EnableRetryOnFailure) are on.
+        // This way a dropped cloud-PostgreSQL connection is retried as one unit: the whole review row
+        // and its audit entry are either written together or not at all.
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await transaction.CommitAsync();
-        }
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
+            _context.PathwayReviews.Add(row);
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
+        });
         return Map(row);
     }
 

@@ -122,5 +122,17 @@ void main() {
       expect(extractErrorMessage(null, 500), contains('server'));
       expect(extractErrorMessage(null, 418), contains('418'));
     });
+
+    test('never surfaces a raw server dump', () {
+      const dump = 'System.InvalidOperationException: An exception has been raised that is likely '
+          'due to a transient failure.\n'
+          '   at PathwayNavigator.Api.Services.AuthService.LoginAsync(LoginRequestDto request)\n'
+          'HEADERS =====';
+      expect(extractErrorMessage(dump, 500), contains('server'));
+      expect(
+        extractErrorMessage('<html><body>Internal Server Error</body></html>', 500),
+        contains('server'),
+      );
+    });
   });
 }
