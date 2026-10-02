@@ -5,6 +5,7 @@ import FormInput from '../components/common/FormInput';
 import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import GoogleSignInButton from '../components/common/GoogleSignInButton';
+import AuthLayout from '../components/common/AuthLayout';
 import { ROLES } from '../config/constants';
 import { dashboardPathForRole } from '../utils/roleRoutes';
 
@@ -98,120 +99,118 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="auth-page-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-icon-badge">🚀</div>
-          <h2>Create Your Account</h2>
-          <p>Join PathwayNavigator to explore your AI learning journey</p>
-        </div>
+    <AuthLayout>
+      <div className="auth-header">
+        <div className="auth-icon-badge">🚀</div>
+        <h2>Create Your Account</h2>
+        <p>Join PathwayNavigator to explore your AI learning journey</p>
+      </div>
 
-        <AlertBanner
-          type="error"
-          message={apiError}
-          onClose={() => setApiError('')}
+      <AlertBanner
+        type="error"
+        message={apiError}
+        onClose={() => setApiError('')}
+      />
+
+      {/* Google Authentication */}
+      <div className="google-auth-section">
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          disabled={isSubmitting}
+          text="signup_with"
+        />
+      </div>
+
+      <div className="auth-divider">
+        <span>or register with email</span>
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate className="auth-form">
+        <FormInput
+          id="register-email"
+          label="Email Address"
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="e.g. student@example.com"
+          error={errors.email}
+          required
+          autoComplete="email"
         />
 
-        {/* Google Authentication */}
-        <div className="google-auth-section">
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            disabled={isSubmitting}
-            text="signup_with"
-          />
-        </div>
-
-        <div className="auth-divider">
-          <span>or register with email</span>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate className="auth-form">
-          <FormInput
-            id="register-email"
-            label="Email Address"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="e.g. student@example.com"
-            error={errors.email}
-            required
-            autoComplete="email"
-          />
-
-          <FormInput
-            id="register-password"
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Min. 8 characters"
-            error={errors.password}
-            required
-            autoComplete="new-password"
+        <FormInput
+          id="register-password"
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="Min. 8 characters"
+          error={errors.password}
+          required
+          autoComplete="new-password"
+        >
+          <button
+            type="button"
+            className="password-toggle-btn"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
-            <button
-              type="button"
-              className="password-toggle-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? '👁️' : '🙈'}
-            </button>
-          </FormInput>
+            {showPassword ? '👁️' : '🙈'}
+          </button>
+        </FormInput>
 
-          <FormInput
-            id="register-confirm-password"
-            label="Confirm Password"
-            type={showPassword ? 'text' : 'password'}
-            name="confirmPassword"
-            value={formData.confirmPassword}
+        <FormInput
+          id="register-confirm-password"
+          label="Confirm Password"
+          type={showPassword ? 'text' : 'password'}
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          placeholder="Re-enter your password"
+          error={errors.confirmPassword}
+          required
+          autoComplete="new-password"
+        />
+
+        <div className="form-group">
+          <label htmlFor="register-role" className="form-label">
+            Account Role <span className="required-star">*</span>
+          </label>
+          <select
+            id="register-role"
+            name="roleName"
+            value={formData.roleName}
             onChange={handleChange}
-            placeholder="Re-enter your password"
-            error={errors.confirmPassword}
-            required
-            autoComplete="new-password"
-          />
-
-          <div className="form-group">
-            <label htmlFor="register-role" className="form-label">
-              Account Role <span className="required-star">*</span>
-            </label>
-            <select
-              id="register-role"
-              name="roleName"
-              value={formData.roleName}
-              onChange={handleChange}
-              className="form-select"
-            >
-              <option value={ROLES.STUDENT}>Student</option>
-              <option value={ROLES.COUNSELLOR}>Counsellor</option>
-              <option value={ROLES.ADMIN}>Admin</option>
-            </select>
-          </div>
-
-          <PrimaryButton
-            type="submit"
-            isLoading={isSubmitting}
-            disabled={isSubmitting}
-            className="w-full"
+            className="form-select"
           >
-            Register Account
-          </PrimaryButton>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            Already have an account?{' '}
-            <Link to="/login" className="auth-link">
-              Sign In
-            </Link>
-          </p>
+            <option value={ROLES.STUDENT}>Student</option>
+            <option value={ROLES.COUNSELLOR}>Counsellor</option>
+            <option value={ROLES.ADMIN}>Admin</option>
+          </select>
         </div>
+
+        <PrimaryButton
+          type="submit"
+          isLoading={isSubmitting}
+          disabled={isSubmitting}
+          className="w-full"
+        >
+          Register Account
+        </PrimaryButton>
+      </form>
+
+      <div className="auth-footer">
+        <p>
+          Already have an account?{' '}
+          <Link to="/login" className="auth-link">
+            Sign In
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

@@ -1,16 +1,87 @@
-# React + Vite
+# PathwayNavigator · Web Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite single-page app for the AI Future Pathway Navigator. It talks only to
+the ASP.NET Core API (`/api`); the Python AI service is called by that API, never by
+the browser.
 
-Currently, two official plugins are available:
+The UI is built on a single token-driven design system — **Aurora Glass**. See
+[`THEME.md`](./THEME.md) for the full style guide.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev      # Vite dev server (host 0.0.0.0, /api proxied to the backend)
+npm run lint     # oxlint
+npm test         # vitest (component + page tests)
+npm run build    # production build
+npm run preview  # preview the production build
+```
 
-## Expanding the Oxlint configuration
+## Environment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Copy `.env.example` to `.env.local`:
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE_URL` | API base URL. Use `/api` together with the dev proxy to avoid CORS. |
+| `VITE_PROXY_TARGET` | Where Vite forwards `/api` (default `http://localhost:5081`). |
+| `VITE_API_TIMEOUT_MS` | Axios timeout (agent calls can be slow). |
+| `VITE_GOOGLE_CLIENT_ID` | Optional; the Google button is hidden when empty. |
+
+---
+
+## Routes
+
+| Path | Access | Page |
+| --- | --- | --- |
+| `/` | public | Marketing home (hero, agent workflow, FAQ, CTA) |
+| `/about` | public | About — mission, principles, four-agent architecture |
+| `/contact` | public | Contact — info cards + validated enquiry form |
+| `/login`, `/register`, `/forgot-password`, `/reset-password` | public | Auth flows (split glass layout) |
+| `/onboarding` | Student | Agent 1 conversational onboarding + standard form |
+| `/career-discovery` | Student | Agent 2 ranked pathways, Agent 3 roadmap tracker, Agent 4 form |
+| `/student/reality-check` | Student | Agent 4 evidence, counsellor decision, revise & resubmit |
+| `/dashboard` | any (role-routed) | Redirects to the dashboard for the signed-in role |
+| `/student/dashboard` | Student | Student dashboard (progress, next actions, profile) |
+| `/admin/dashboard` | Admin | Administration & governance overview |
+| `/counsellor/dashboard` | Counsellor / Admin | Approval centre (queue, evidence, decision) |
+| `*` | public | 404 |
+
+---
+
+## Project structure
+
+```
+src/
+  api/          axios client + endpoint wrappers (auth, profile, pathway, onboarding, review)
+  components/
+    common/     Navbar, Footer, ThemeToggle, AuthLayout, Reveal, AgentWorkflow,
+                JourneySteps, ScrollProgress, BrandMark, form primitives, route guards
+    onboarding/ Agent 1 chat window, slot sidebar, standard form
+    pathway/    ScoreRing, MarketMeter, TrendBadge, MissingSkillsPanel,
+                RoadmapTimeline, PathwayRecommendationCard
+  config/       constants + shared agent/journey content
+  context/      AuthContext, ThemeContext (+ definition modules)
+  hooks/        useAuth, useTheme
+  pages/        one file per route
+  styles/       theme layers (see THEME.md)
+  utils/        apiError, roleRoutes, tokenUtils
+```
+
+---
+
+## Conventions
+
+- **Styling**: never hard-code colours/spacing in components; use the tokens in
+  `src/styles/tokens.css`. Page-specific CSS goes in `src/styles/pages/` and is
+  imported by `src/index.css`.
+- **Theme**: dark by default, light available through `useTheme()`; the choice is
+  persisted and applied before first paint.
+- **Accessibility**: keep `aria-*` attributes, `aria-label`s on icon buttons and
+  the `:focus-visible` ring; respect `prefers-reduced-motion`.
+- **Testing**: page tests mock the API modules (`vi.mock`) and render with
+  `MemoryRouter`; keep user-visible strings that tests assert on intact when
+  restyling.

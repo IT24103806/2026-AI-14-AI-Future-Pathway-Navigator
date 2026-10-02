@@ -1,0 +1,269 @@
+/* =============================================================================
+   PathwayNavigator · Design Tokens
+   "Aurora Glass" theme system — a single source of truth for colour, glass,
+   spacing, radii, elevation and motion across every page and component.
+   ============================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Typography ------------------------------------------------- */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Sora', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --fs-2xs: 0.68rem;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.85rem;
+  --fs-md: 0.95rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.12rem;
+  --fs-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.6rem);
+  --fs-2xl: clamp(1.5rem, 1.25rem + 1.1vw, 2.15rem);
+  --fs-3xl: clamp(1.9rem, 1.4rem + 2.2vw, 3.1rem);
+  --fs-4xl: clamp(2.35rem, 1.5rem + 3.6vw, 4.35rem);
+
+  --lh-tight: 1.12;
+  --lh-snug: 1.3;
+  --lh-body: 1.65;
+
+  /* ---------- Core palette (dark / aurora night) ------------------------- */
+  --ink-950: #04060f;
+  --ink-900: #070b18;
+  --ink-800: #0b1120;
+  --ink-700: #111a2e;
+  --ink-600: #18223a;
+  --ink-400: #64748b;
+
+  --brand-cyan: #22d3ee;
+  --brand-sky: #38bdf8;
+  --brand-blue: #5b8cff;
+  --brand-indigo: #6366f1;
+  --brand-violet: #a855f7;
+  --brand-pink: #f472b6;
+  --brand-mint: #34d399;
+  --brand-amber: #fbbf24;
+
+  /* ---------- Surfaces --------------------------------------------------- */
+  --bg-base: var(--ink-950);
+  --bg-deep: #02030a;
+  --bg-raised: rgba(17, 26, 46, 0.72);
+
+  --mesh-1: rgba(34, 211, 238, 0.30);
+  --mesh-2: rgba(99, 102, 241, 0.34);
+  --mesh-3: rgba(168, 85, 247, 0.26);
+  --mesh-4: rgba(244, 114, 182, 0.18);
+
+  /* Liquid-glass recipe: translucent fill + hairline border + sheen + blur */
+  --glass-blur: 22px;
+  --glass-saturate: 165%;
+  --glass-1: rgba(255, 255, 255, 0.045);
+  --glass-2: rgba(255, 255, 255, 0.075);
+  --glass-3: rgba(255, 255, 255, 0.12);
+  --glass-4: rgba(255, 255, 255, 0.18);
+  --glass-border: rgba(255, 255, 255, 0.13);
+  --glass-border-strong: rgba(255, 255, 255, 0.24);
+  --glass-sheen: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 24px 60px -28px rgba(2, 6, 23, 0.9);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  --header-bg: rgba(5, 8, 18, 0.62);
+  --header-bg-scrolled: rgba(5, 8, 18, 0.82);
+  --drawer-bg: rgba(5, 8, 18, 0.94);
+  --footer-bg: rgba(5, 8, 18, 0.72);
+
+  --ring-hole: rgba(9, 14, 28, 0.94);
+
+  --surface-solid: #0c1425;
+  --surface-solid-2: #101a2f;
+  --surface-muted: rgba(148, 163, 184, 0.08);
+
+  --border-color: var(--glass-border);
+  --border-focus: var(--brand-blue);
+  --divider: rgba(255, 255, 255, 0.09);
+
+  /* ---------- Text ------------------------------------------------------- */
+  --text-main: #eef2ff;
+  --text-muted: #a8b4d0;
+  --text-dim: #7d89a6;
+  --text-inverse: #060a16;
+  --text-on-brand: #ffffff;
+
+  /* ---------- Brand + gradients ------------------------------------------ */
+  --primary: var(--brand-blue);
+  --primary-hover: #7ba6ff;
+  --primary-active: #3f6fe4;
+  --primary-light: rgba(91, 140, 255, 0.16);
+  --primary-contrast: #ffffff;
+
+  --secondary: var(--brand-violet);
+  --secondary-hover: #bb7bff;
+  --secondary-light: rgba(168, 85, 247, 0.16);
+
+  --accent-cyan: var(--brand-cyan);
+  --accent-violet: var(--brand-violet);
+  --accent-pink: var(--brand-pink);
+  --accent-mint: var(--brand-mint);
+  --accent-amber: var(--brand-amber);
+
+  --gradient-brand: linear-gradient(118deg, var(--brand-cyan) 0%, var(--brand-blue) 42%, var(--brand-violet) 78%, var(--brand-pink) 100%);
+  --gradient-brand-soft: linear-gradient(118deg, rgba(34, 211, 238, 0.85), rgba(99, 102, 241, 0.85) 45%, rgba(168, 85, 247, 0.85));
+  --gradient-cool: linear-gradient(140deg, rgba(56, 189, 248, 0.9), rgba(99, 102, 241, 0.9));
+  --gradient-warm: linear-gradient(140deg, rgba(251, 191, 36, 0.95), rgba(244, 114, 182, 0.9));
+  --gradient-mint: linear-gradient(140deg, rgba(52, 211, 153, 0.95), rgba(34, 211, 238, 0.9));
+  --gradient-sheen: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.55) 48%, transparent 70%);
+
+  /* ---------- State ------------------------------------------------------ */
+  --danger: #fb7185;
+  --danger-strong: #f43f5e;
+  --danger-soft: rgba(251, 113, 133, 0.14);
+  --danger-border: rgba(251, 113, 133, 0.36);
+
+  --success: #34d399;
+  --success-strong: #10b981;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --success-border: rgba(52, 211, 153, 0.36);
+
+  --warning: #fbbf24;
+  --warning-strong: #f59e0b;
+  --warning-soft: rgba(251, 191, 36, 0.15);
+  --warning-border: rgba(251, 191, 36, 0.36);
+
+  --info: var(--brand-sky);
+  --info-soft: rgba(56, 189, 248, 0.14);
+  --info-border: rgba(56, 189, 248, 0.34);
+
+  /* ---------- Radii ------------------------------------------------------ */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
+  --radius-2xl: 38px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---------- Elevation -------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(2, 6, 23, 0.4);
+  --shadow-sm: 0 8px 20px -12px rgba(2, 6, 23, 0.7);
+  --shadow-md: 0 18px 40px -22px rgba(2, 6, 23, 0.8);
+  --shadow-lg: 0 34px 80px -34px rgba(2, 6, 23, 0.9);
+  --shadow-card: var(--glass-shadow);
+  --shadow-glow: 0 0 32px rgba(91, 140, 255, 0.35);
+  --shadow-glow-cyan: 0 0 34px rgba(34, 211, 238, 0.32);
+  --shadow-glow-violet: 0 0 38px rgba(168, 85, 247, 0.3);
+  --ring: 0 0 0 3px rgba(91, 140, 255, 0.28);
+  --ring-danger: 0 0 0 3px rgba(251, 113, 133, 0.26);
+  --ring-success: 0 0 0 3px rgba(52, 211, 153, 0.26);
+
+  /* ---------- Motion ----------------------------------------------------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-instant: 120ms;
+  --dur-fast: 180ms;
+  --dur: 280ms;
+  --dur-slow: 520ms;
+  --dur-slower: 900ms;
+  --transition: all var(--dur) var(--ease-out);
+
+  /* ---------- Layout ----------------------------------------------------- */
+  --container-max: 1200px;
+  --container-wide: 1400px;
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --nav-height: 76px;
+  --section-y: clamp(3.5rem, 2rem + 6vw, 7rem);
+  --z-base: 1;
+  --z-sticky: 50;
+  --z-nav: 100;
+  --z-drawer: 200;
+  --z-toast: 320;
+}
+
+/* =============================================================================
+   Light theme — bright "frosted daylight" glass over a pastel aurora mesh.
+   Applied by setting  data-theme="light"  on <html>.
+   ============================================================================= */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg-base: #eef2fb;
+  --bg-deep: #e5ebf8;
+  --bg-raised: rgba(255, 255, 255, 0.7);
+
+  --mesh-1: rgba(34, 211, 238, 0.34);
+  --mesh-2: rgba(99, 102, 241, 0.26);
+  --mesh-3: rgba(168, 85, 247, 0.22);
+  --mesh-4: rgba(244, 114, 182, 0.2);
+
+  --glass-1: rgba(255, 255, 255, 0.58);
+  --glass-2: rgba(255, 255, 255, 0.72);
+  --glass-3: rgba(255, 255, 255, 0.84);
+  --glass-4: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --glass-border-strong: rgba(15, 23, 42, 0.18);
+  --glass-sheen: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 26px 60px -34px rgba(30, 41, 59, 0.45);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --header-bg: rgba(255, 255, 255, 0.62);
+  --header-bg-scrolled: rgba(255, 255, 255, 0.85);
+  --drawer-bg: rgba(255, 255, 255, 0.95);
+  --footer-bg: rgba(255, 255, 255, 0.6);
+
+  --ring-hole: #ffffff;
+
+  --surface-solid: #ffffff;
+  --surface-solid-2: #f6f8ff;
+  --surface-muted: rgba(15, 23, 42, 0.045);
+
+  --divider: rgba(15, 23, 42, 0.08);
+
+  --text-main: #101a33;
+  --text-muted: #4c5a7a;
+  --text-dim: #6b7891;
+  --text-inverse: #f8fafc;
+  --text-on-brand: #ffffff;
+
+  --primary: #3b6df6;
+  --primary-hover: #2f5fe0;
+  --primary-active: #254fca;
+  --primary-light: rgba(59, 109, 246, 0.12);
+
+  --secondary: #8b5cf6;
+  --secondary-hover: #7c45ef;
+  --secondary-light: rgba(139, 92, 246, 0.12);
+
+  --danger: #e11d48;
+  --danger-soft: rgba(225, 29, 72, 0.1);
+  --danger-border: rgba(225, 29, 72, 0.28);
+
+  --success: #0f9d6f;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.3);
+
+  --warning: #b45309;
+  --warning-soft: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.32);
+
+  --info: #0284c7;
+  --info-soft: rgba(2, 132, 199, 0.1);
+  --info-border: rgba(2, 132, 199, 0.26);
+
+  --shadow-xs: 0 1px 2px rgba(30, 41, 59, 0.1);
+  --shadow-sm: 0 10px 22px -14px rgba(30, 41, 59, 0.35);
+  --shadow-md: 0 20px 44px -26px rgba(30, 41, 59, 0.4);
+  --shadow-lg: 0 36px 80px -40px rgba(30, 41, 59, 0.5);
+  --shadow-glow: 0 0 30px rgba(59, 109, 246, 0.24);
+  --ring: 0 0 0 3px rgba(59, 109, 246, 0.22);
+}
+
+/* Respect users who prefer fewer fireworks. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur: 1ms;
+    --dur-slow: 1ms;
+    --dur-slower: 1ms;
+  }
+}
