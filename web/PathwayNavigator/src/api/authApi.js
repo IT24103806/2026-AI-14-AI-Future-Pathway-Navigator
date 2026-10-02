@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { getApiErrorMessage } from '../utils/apiError';
 import { API_ROUTES } from '../config/constants';
 
 /**
@@ -15,10 +16,7 @@ export const registerApi = async (userData) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Registration failed. Please try again.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Registration failed. Please try again.'));
   }
 };
 
@@ -35,10 +33,7 @@ export const loginApi = async (credentials) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Invalid email or password.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Invalid email or password.'));
   }
 };
 
@@ -54,10 +49,7 @@ export const googleLoginApi = async (idToken) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Google authentication failed. Please try again.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Google authentication failed. Please try again.'));
   }
 };
 
@@ -73,10 +65,7 @@ export const forgotPasswordApi = async (email) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to request password reset code.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to request password reset code.'));
   }
 };
 
@@ -94,10 +83,7 @@ export const verifyResetCodeApi = async (email, code) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Invalid or expired verification code.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Invalid or expired verification code.'));
   }
 };
 
@@ -116,10 +102,7 @@ export const resetPasswordApi = async (resetData) => {
     });
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to reset password. Please check your inputs.');
-    }
-    throw new Error('Network error. Unable to connect to authentication server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to reset password. Please check your inputs.'));
   }
 };
 

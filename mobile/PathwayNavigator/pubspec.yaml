@@ -1,7 +1,7 @@
 name: pathway_navigator
-description: "A new Flutter project."
+description: "AI Future Pathway Navigator - Android client for students, counsellors and administrators."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -9,8 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # HTTP transport (wrapped by lib/core/network/api_client.dart - nothing else imports it).
   http: ^1.2.0
+  # Encrypted token storage (Android Keystore backed).
   flutter_secure_storage: ^9.2.4
+  # State management: ChangeNotifier + Provider (no code generation).
+  provider: ^6.1.2
+  # Declarative, role-aware routing.
+  go_router: ^14.6.2
 
 dev_dependencies:
   flutter_test:

@@ -60,7 +60,7 @@ jobs:
       run: npm run build
 
   test-agent-4:
-    name: Agent 4 (Python) Tests
+    name: AI Service (Python) Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -70,25 +70,33 @@ jobs:
     - name: Install AI service dependencies
       working-directory: ./ai_service
       run: pip install -r requirements.txt
-    - name: Run deterministic agent evaluation
+    - name: Run AI service tests (agents + .NET contract)
       working-directory: ./ai_service
-      run: pytest -q tests/test_agent_4.py
+      run: pytest -q
 
-  test-flutter-member-4:
-    name: Flutter Member 4 Tests
+  test-flutter-mobile:
+    name: Flutter Android app (analyze, test, build)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile/PathwayNavigator
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
     - uses: subosito/flutter-action@v2
       with:
         channel: stable
+        cache: true
     - name: Restore Flutter packages
-      working-directory: ./mobile/PathwayNavigator
       run: flutter pub get
     - name: Analyze Flutter code
-      working-directory: ./mobile/PathwayNavigator
       run: flutter analyze
     - name: Run Flutter tests
-      working-directory: ./mobile/PathwayNavigator
-      run: flutter test
-
+      run: flutter test --coverage
+    - name: Build debug APK (proves the Android project compiles)
+      run: flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5081/api
+    - name: Build release APK (HTTPS enforced at start-up)
+      run: flutter build apk --release --dart-define=API_BASE_URL=https://api.example.invalid/api

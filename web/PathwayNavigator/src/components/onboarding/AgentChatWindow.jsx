@@ -67,8 +67,9 @@ const AgentChatWindow = ({ onSlotsUpdate, currentSlots }) => {
     setIsTyping(true);
 
     try {
-      // Format history for Agent 1
-      const history = updatedMessages
+      // Prior turns only: the current user turn is sent separately as `message`, and the agent
+      // appends it to the prompt itself (sending it in both places duplicated it for the LLM).
+      const history = messages
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .map((m) => ({ role: m.role, content: m.content }));
 

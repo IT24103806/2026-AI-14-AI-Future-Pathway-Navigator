@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { getApiErrorMessage } from '../utils/apiError';
 import { API_ROUTES } from '../config/constants';
 
 /**
@@ -10,10 +11,7 @@ export const getProfileStatusApi = async () => {
     const response = await apiClient.get(API_ROUTES.PROFILE_STATUS);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to check profile status.');
-    }
-    throw new Error('Network error. Unable to connect to server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to check profile status.'));
   }
 };
 
@@ -26,10 +24,7 @@ export const getStudentProfileApi = async () => {
     const response = await apiClient.get(API_ROUTES.PROFILE);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to fetch student profile.');
-    }
-    throw new Error('Network error. Unable to connect to server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to fetch student profile.'));
   }
 };
 
@@ -43,9 +38,6 @@ export const updateStudentProfileApi = async (profileData) => {
     const response = await apiClient.put(API_ROUTES.PROFILE, profileData);
     return response.data;
   } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data?.message || 'Failed to update student profile.');
-    }
-    throw new Error('Network error. Unable to connect to server.');
+    throw new Error(getApiErrorMessage(error, 'Failed to update student profile.'));
   }
 };

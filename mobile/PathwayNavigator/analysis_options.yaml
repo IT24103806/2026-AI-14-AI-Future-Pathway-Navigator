@@ -1,3 +1,6 @@
+# Lints: the Flutter team's recommended set. Tighten (e.g. strict-casts) as the codebase matures.
+include: package:flutter_lints/flutter.yaml
+
 analyzer:
   exclude:
     - build/**
@@ -7,4 +10,3 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
-include: package:flutter_lints/flutter.yaml
