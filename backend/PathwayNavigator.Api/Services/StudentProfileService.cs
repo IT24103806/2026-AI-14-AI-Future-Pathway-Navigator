@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -49,30 +50,14 @@ namespace PathwayNavigator.Api.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
-            if (profile == null) return null;
-
-            return new StudentProfileDto
-            {
-                Id = profile.Id,
-                UserId = profile.UserId,
-                Email = profile.User?.Email ?? string.Empty,
-                FullName = profile.User?.FullName,
-                AcademicStage = profile.AcademicStage,
-                CoreSkills = profile.CoreSkills,
-                HobbiesInterests = profile.HobbiesInterests,
-                CareerAmbitions = profile.CareerAmbitions,
-                AlStream = profile.AlStream,
-                AlResults = profile.AlResults,
-                BudgetLevel = string.IsNullOrWhiteSpace(profile.BudgetLevel) ? "Medium" : profile.BudgetLevel,
-                IsOnboardingCompleted = profile.IsOnboardingCompleted,
-                OnboardingMethod = profile.OnboardingMethod,
-                CreatedAt = profile.CreatedAt,
-                UpdatedAt = profile.UpdatedAt
-            };
+            return profile == null ? null : MapToDto(profile, profile.User);
         }
 
         public async Task<StudentProfileDto> SaveOrUpdateProfileAsync(Guid userId, CompleteOnboardingDto dto)
         {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new KeyNotFoundException("User account was not found.");
+
             var profile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (profile == null)
@@ -81,13 +66,13 @@ namespace PathwayNavigator.Api.Services
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
-                    AcademicStage = dto.AcademicStage,
-                    CoreSkills = dto.CoreSkills ?? new(),
-                    HobbiesInterests = dto.HobbiesInterests ?? new(),
-                    CareerAmbitions = dto.CareerAmbitions,
+                    AcademicStage = dto.AcademicStage?.Trim() ?? string.Empty,
+                    CoreSkills = NormalizeList(dto.CoreSkills),
+                    HobbiesInterests = NormalizeList(dto.HobbiesInterests),
+                    CareerAmbitions = dto.CareerAmbitions?.Trim() ?? string.Empty,
                     AlStream = dto.AlStream?.Trim() ?? string.Empty,
                     AlResults = dto.AlResults?.Trim().ToUpperInvariant() ?? string.Empty,
-                    BudgetLevel = string.IsNullOrWhiteSpace(dto.BudgetLevel) ? "Medium" : dto.BudgetLevel.Trim(),
+                    BudgetLevel = NormalizeBudget(dto.BudgetLevel),
                     IsOnboardingCompleted = true,
                     OnboardingMethod = dto.OnboardingMethod,
                     CreatedAt = DateTime.UtcNow,
@@ -97,10 +82,10 @@ namespace PathwayNavigator.Api.Services
             }
             else
             {
-                profile.AcademicStage = dto.AcademicStage;
-                profile.CoreSkills = dto.CoreSkills ?? new();
-                profile.HobbiesInterests = dto.HobbiesInterests ?? new();
-                profile.CareerAmbitions = dto.CareerAmbitions;
+                profile.AcademicStage = dto.AcademicStage?.Trim() ?? profile.AcademicStage;
+                profile.CoreSkills = NormalizeList(dto.CoreSkills);
+                profile.HobbiesInterests = NormalizeList(dto.HobbiesInterests);
+                profile.CareerAmbitions = dto.CareerAmbitions?.Trim() ?? profile.CareerAmbitions;
                 if (!string.IsNullOrWhiteSpace(dto.AlStream))
                 {
                     profile.AlStream = dto.AlStream.Trim();
@@ -118,28 +103,85 @@ namespace PathwayNavigator.Api.Services
                 profile.UpdatedAt = DateTime.UtcNow;
             }
 
+            ApplyFullName(user, dto.FullName);
+
             await _context.SaveChangesAsync();
+            return MapToDto(profile, user);
+        }
 
-            var user = await _context.Users.FindAsync(userId);
+        public async Task<StudentProfileDto> UpdateProfileAsync(Guid userId, UpdateStudentProfileDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new KeyNotFoundException("User account was not found.");
 
-            return new StudentProfileDto
+            var profile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var isNewProfile = profile == null;
+
+            if (profile == null)
             {
-                Id = profile.Id,
-                UserId = profile.UserId,
-                Email = user?.Email ?? string.Empty,
-                FullName = user?.FullName,
-                AcademicStage = profile.AcademicStage,
-                CoreSkills = profile.CoreSkills,
-                HobbiesInterests = profile.HobbiesInterests,
-                CareerAmbitions = profile.CareerAmbitions,
-                AlStream = profile.AlStream,
-                AlResults = profile.AlResults,
-                BudgetLevel = string.IsNullOrWhiteSpace(profile.BudgetLevel) ? "Medium" : profile.BudgetLevel,
-                IsOnboardingCompleted = profile.IsOnboardingCompleted,
-                OnboardingMethod = profile.OnboardingMethod,
-                CreatedAt = profile.CreatedAt,
-                UpdatedAt = profile.UpdatedAt
-            };
+                // A student can edit their details before the onboarding profile exists: create the
+                // row so nothing is lost, and let the completeness check below decide the flag.
+                profile = new StudentProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    IsOnboardingCompleted = false,
+                    OnboardingMethod = "ManualUpdate"
+                };
+            }
+
+            ApplyFullName(user, dto.FullName);
+
+            if (!string.IsNullOrWhiteSpace(dto.AcademicStage))
+            {
+                profile.AcademicStage = dto.AcademicStage.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.CareerAmbitions))
+            {
+                profile.CareerAmbitions = dto.CareerAmbitions.Trim();
+            }
+
+            // Null keeps the stored list; an explicit (possibly empty) list replaces it.
+            if (dto.CoreSkills != null)
+            {
+                profile.CoreSkills = NormalizeList(dto.CoreSkills);
+            }
+
+            if (dto.HobbiesInterests != null)
+            {
+                profile.HobbiesInterests = NormalizeList(dto.HobbiesInterests);
+            }
+
+            if (dto.AlStream != null)
+            {
+                profile.AlStream = dto.AlStream.Trim();
+            }
+
+            if (dto.AlResults != null)
+            {
+                profile.AlResults = dto.AlResults.Trim().ToUpperInvariant();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.BudgetLevel))
+            {
+                profile.BudgetLevel = dto.BudgetLevel.Trim();
+            }
+
+            // Once every essential detail is present the profile counts as onboarded again.
+            if (HasEssentialDetails(profile))
+            {
+                profile.IsOnboardingCompleted = true;
+            }
+
+            profile.UpdatedAt = DateTime.UtcNow;
+            if (isNewProfile)
+            {
+                _context.StudentProfiles.Add(profile);
+            }
+
+            await _context.SaveChangesAsync();
+            return MapToDto(profile, user);
         }
 
         public async Task<bool> SaveFromExtractedSlotsAsync(Guid userId, ExtractedSlotsDto slots, string method = "ConversationalAgent")
@@ -151,6 +193,7 @@ namespace PathwayNavigator.Api.Services
 
             var dto = new CompleteOnboardingDto
             {
+                FullName = slots.FullName,
                 AcademicStage = slots.AcademicStage,
                 CoreSkills = slots.CoreSkills,
                 HobbiesInterests = slots.HobbiesInterests,
@@ -161,5 +204,54 @@ namespace PathwayNavigator.Api.Services
             await SaveOrUpdateProfileAsync(userId, dto);
             return true;
         }
+
+        // ---------------------------------------------------------------- helpers
+
+        private static void ApplyFullName(User user, string? fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return;
+            }
+
+            user.FullName = fullName.Trim();
+            user.UpdatedAt = DateTime.UtcNow;
+        }
+
+        private static bool HasEssentialDetails(StudentProfile profile) =>
+            !string.IsNullOrWhiteSpace(profile.AcademicStage) &&
+            !string.IsNullOrWhiteSpace(profile.CareerAmbitions) &&
+            profile.CoreSkills.Count > 0 &&
+            profile.HobbiesInterests.Count > 0;
+
+        /// <summary>Trims entries, drops blanks and removes case-insensitive duplicates.</summary>
+        private static List<string> NormalizeList(IEnumerable<string>? values) =>
+            (values ?? Enumerable.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        private static string NormalizeBudget(string? budgetLevel) =>
+            string.IsNullOrWhiteSpace(budgetLevel) ? "Medium" : budgetLevel.Trim();
+
+        private static StudentProfileDto MapToDto(StudentProfile profile, User? user) => new()
+        {
+            Id = profile.Id,
+            UserId = profile.UserId,
+            Email = user?.Email ?? string.Empty,
+            FullName = user?.FullName,
+            AcademicStage = profile.AcademicStage,
+            CoreSkills = profile.CoreSkills,
+            HobbiesInterests = profile.HobbiesInterests,
+            CareerAmbitions = profile.CareerAmbitions,
+            AlStream = profile.AlStream,
+            AlResults = profile.AlResults,
+            BudgetLevel = NormalizeBudget(profile.BudgetLevel),
+            IsOnboardingCompleted = profile.IsOnboardingCompleted,
+            OnboardingMethod = profile.OnboardingMethod,
+            CreatedAt = profile.CreatedAt,
+            UpdatedAt = profile.UpdatedAt
+        };
     }
 }

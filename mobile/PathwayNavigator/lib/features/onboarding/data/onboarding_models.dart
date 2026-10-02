@@ -12,12 +12,15 @@ const List<String> academicStages = [
 /// Mirrors `ExtractedSlotsDto` (snake_case JSON, as produced by Agent 1).
 class ProfileSlots {
   const ProfileSlots({
+    this.fullName,
     this.academicStage,
     this.coreSkills = const [],
     this.hobbiesInterests = const [],
     this.careerAmbitions,
   });
 
+  /// Display name, only captured when the student states it explicitly.
+  final String? fullName;
   final String? academicStage;
   final List<String> coreSkills;
   final List<String> hobbiesInterests;
@@ -26,6 +29,7 @@ class ProfileSlots {
   static const ProfileSlots empty = ProfileSlots();
 
   factory ProfileSlots.fromJson(Map<String, dynamic> json) => ProfileSlots(
+        fullName: asNullableString(json['full_name']),
         academicStage: asNullableString(json['academic_stage']),
         coreSkills: asStringList(json['core_skills']),
         hobbiesInterests: asStringList(json['hobbies_interests']),
@@ -33,6 +37,7 @@ class ProfileSlots {
       );
 
   Map<String, dynamic> toJson() => {
+        'full_name': fullName,
         'academic_stage': academicStage,
         'core_skills': coreSkills,
         'hobbies_interests': hobbiesInterests,

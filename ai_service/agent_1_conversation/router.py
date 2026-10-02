@@ -12,11 +12,13 @@ async def chat_with_agent_1(request: Agent1ChatRequest):
     try:
         current_slots = request.current_slots or ExtractedProfileSlots()
         history_dicts = [{"role": m.role, "content": m.content} for m in request.history]
-        
+
         response = run_agent_1_turn(
             user_message=request.message,
             history=history_dicts,
-            current_slots=current_slots
+            current_slots=current_slots,
+            update_mode=request.update_mode,
+            baseline_slots=request.baseline_slots
         )
         return response
     except Exception as e:

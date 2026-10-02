@@ -66,7 +66,11 @@ const DashboardPage = () => {
         </div>
 
         <div className="dashboard-actions">
-          <Link to="/onboarding" className="btn btn-glass">
+          <Link
+            to="/onboarding?mode=update"
+            className="btn btn-glass"
+            title="Review and update your saved profile with Agent 1"
+          >
             🤖 Re-run AI Onboarding
           </Link>
           <button onClick={logout} className="btn btn-outline-danger">
@@ -199,10 +203,14 @@ const DashboardPage = () => {
           </p>
         </Link>
 
-        <Link to="/onboarding" className="action-tile">
+        <Link to="/onboarding?mode=update" className="action-tile">
           <span className="action-tile__icon" aria-hidden="true">🤖</span>
-          <h3>AI onboarding</h3>
-          <p>Update your academic stage, skills, interests or ambitions — the profile refreshes instantly.</p>
+          <h3>{profile ? 'Update your profile' : 'AI onboarding'}</h3>
+          <p>
+            {profile
+              ? 'Re-run Agent 1 to refresh your name, academic stage, skills, interests or ambition — every change is saved to your profile.'
+              : 'Set up your academic stage, skills, interests and ambition with the AI guide.'}
+          </p>
         </Link>
 
         <div className="action-tile action-tile--static">

@@ -189,12 +189,14 @@ void main() {
 
     test('ProfileSlots round-trips the snake_case agent payload', () {
       final slots = ProfileSlots.fromJson({
+        'full_name': 'Nimal Perera',
         'academic_stage': 'After A/L',
         'core_skills': ['Python'],
         'hobbies_interests': <String>[],
         'career_ambitions': null,
       });
       expect(slots.filledCount, 2);
+      expect(slots.fullName, 'Nimal Perera');
       expect(slots.toJson()['core_skills'], ['Python']);
     });
   });
