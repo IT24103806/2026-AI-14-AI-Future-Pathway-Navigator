@@ -1,4 +1,5 @@
 import React from 'react';
+import ConsultantNote from '../consultation/ConsultantNote';
 
 const PHASE_ICONS = {
   Foundation: '🌱',
@@ -6,8 +7,16 @@ const PHASE_ICONS = {
   Specialization: '🚀',
 };
 
-const RoadmapTimeline = ({ roadmap }) => {
+const RoadmapTimeline = ({ roadmap, guidance }) => {
   if (!roadmap || roadmap.length === 0) return null;
+
+  // `guidance` is the consultant write-back list; entries named for a stage are pinned to that step.
+  const notesFor = (step) => {
+    if (!Array.isArray(guidance) || guidance.length === 0) return null;
+    const stepKey = (step.stage ?? step.phase ?? '').toString().toLowerCase();
+    const matching = guidance.filter((item) => item.stageKey && item.stageKey.toLowerCase() === stepKey);
+    return matching.length > 0 ? matching : null;
+  };
 
   return (
     <div className="roadmap-timeline">
@@ -22,6 +31,7 @@ const RoadmapTimeline = ({ roadmap }) => {
             <div className="roadmap-step-content">
               <span className="roadmap-step-phase">{step.phase}</span>
               <span className="roadmap-step-course">{step.course}</span>
+              {notesFor(step) && <ConsultantNote guidance={notesFor(step)} title="Consultant-recommended" />}
             </div>
           </div>
         ))}

@@ -73,5 +73,64 @@ namespace PathwayNavigator.Api.Services
                 // Keep the flow operational even if SMTP provider fails temporarily
             }
         }
+
+        /// <summary>
+        /// Consultation / decision notification. Same dev-mode behaviour as the reset code: when SMTP
+        /// credentials are absent the message is logged to the terminal instead of being sent, so the
+        /// feature stays demonstrable without an SMTP provider.
+        /// </summary>
+        public async Task SendConsultationUpdateAsync(string toEmail, string subject, string message)
+        {
+            var emailSettings = _configuration.GetSection("EmailSettings");
+            var smtpHost = emailSettings["SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.TryParse(emailSettings["SmtpPort"], out var port) ? port : 587;
+            var senderEmail = emailSettings["SenderEmail"];
+            var senderPassword = emailSettings["SenderPassword"];
+            var senderName = emailSettings["SenderName"] ?? "Pathway Navigator";
+            var enableSsl = bool.TryParse(emailSettings["EnableSsl"], out var ssl) ? ssl : true;
+
+            var safeSubject = string.IsNullOrWhiteSpace(subject) ? "Pathway Navigator update" : subject;
+            var safeMessage = System.Net.WebUtility.HtmlEncode(message);
+
+            if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
+            {
+                _logger.LogInformation(
+                    "\n======================================================\n[EMAIL SERVICE - DEV MODE]\nTo: {ToEmail}\nSubject: {Subject}\nMessage: {Message}\n======================================================\n",
+                    toEmail, safeSubject, safeMessage);
+                return;
+            }
+
+            try
+            {
+                using var client = new SmtpClient(smtpHost, smtpPort)
+                {
+                    Credentials = new NetworkCredential(senderEmail, senderPassword),
+                    EnableSsl = enableSsl
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(senderEmail, senderName),
+                    Subject = safeSubject,
+                    Body = $@"
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
+                            <h2 style='color: #4F46E5; text-align: center;'>Pathway Navigator</h2>
+                            <p style='color: #333; font-size: 15px; line-height: 1.6;'>{safeMessage}</p>
+                            <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
+                            <p style='color: #999; font-size: 12px; text-align: center;'>Open the app to see the full conversation and continue your pathway.</p>
+                            <p style='color: #999; font-size: 12px; text-align: center;'>© {DateTime.UtcNow.Year} Pathway Navigator. All rights reserved.</p>
+                        </div>",
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(toEmail);
+                await client.SendMailAsync(mailMessage);
+                _logger.LogInformation("Consultation update email sent to {ToEmail}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send consultation update email to {ToEmail}", toEmail);
+            }
+        }
     }
 }

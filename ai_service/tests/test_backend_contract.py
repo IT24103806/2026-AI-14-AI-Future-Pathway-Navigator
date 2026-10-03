@@ -99,7 +99,9 @@ def test_agent_3_plan_matches_PathwayPlannerResponseDto(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ready"
-    assert_dto_satisfied(body, "Pathway/PathwayPlannerDtos.cs", "PathwayPlannerResponseDto", frozenset({"id", "updated_at"}))
+    assert_dto_satisfied(
+        body, "Pathway/PathwayPlannerDtos.cs", "PathwayPlannerResponseDto",
+        frozenset({"id", "updated_at", "consultant_guidance_json"}))
     assert_dto_satisfied(body["roadmap"][0], "Pathway/PathwayPlannerDtos.cs", "RoadmapStageDto")
 
 
@@ -157,3 +159,81 @@ def test_agent_3_accepts_every_agent_2_pathway(client):
     for pathway in CAREER_PATHWAYS:
         body = client.post(f"{API}/agent-3/plan", json={"selected_pathway": pathway["pathway_name"], "profile": {}}).json()
         assert body["status"] == "ready", pathway["pathway_name"]
+
+
+# ---------------------------------------------------------------------------- Agent 5 (Copilot)
+
+def test_agent_5_triage_matches_AgentTriageResultDto(client):
+    payload = {
+        "subject": "Why is my Reality Check still pending?",
+        "body": "I cannot proceed with my pathway and the deadline is tomorrow.",
+        "context_type": "RealityCheck",
+        "context_summary": "Reality Check: AI Engineer - Pending",
+    }
+    response = client.post(f"{API}/agent-5/triage", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "completed"
+    # Fields the .NET AgentTriageResultDto reads from the AI service.
+    assert_dto_satisfied(
+        body, "Consultation/ConsultationDtos.cs", "AgentTriageResultDto",
+        frozenset(),
+    )
+
+
+def test_agent_5_brief_matches_AgentBriefResultDto(client):
+    payload = {
+        "subject": "Where do I learn statistics?",
+        "body": "My roadmap says I am missing Statistics and I do not know where to start.",
+        "context_type": "PathwayPlan",
+        "context_summary": "Roadmap: AI Engineer",
+        "student_evidence": '{"latestRoadmap": {"selectedPathway": "AI Engineer"}}',
+    }
+    response = client.post(f"{API}/agent-5/brief", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert_dto_satisfied(body, "Consultation/ConsultationDtos.cs", "AgentBriefResultDto")
+    assert_dto_satisfied(body["sections"][0], "Consultation/ConsultationDtos.cs", "AgentBriefSectionDto")
+
+
+def test_agent_5_draft_matches_AgentDraftResultDto_and_requires_human_review(client):
+    payload = {
+        "subject": "Can you approve my Reality Check?",
+        "body": "Please approve my pathway so I can register before the closing date.",
+        "context_type": "RealityCheck",
+        "context_summary": "Reality Check: AI Engineer - Pending",
+        "student_evidence": "{}",
+        "tone": "Supportive",
+    }
+    response = client.post(f"{API}/agent-5/draft-reply", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert_dto_satisfied(body, "Consultation/ConsultationDtos.cs", "AgentDraftResultDto")
+    # The human-in-the-loop gate is part of the contract, not a UI detail.
+    assert body["human_review_required"] is True
+    assert body["must_escalate"] is True
+
+
+def test_agent_5_faq_matches_AgentFaqMatchResultDto(client):
+    response = client.post(f"{API}/agent-5/faq-match", json={"question": "How do I decide between two pathways?"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["human_option_available"] is True
+    if body["matches"]:
+        assert_dto_satisfied(body["matches"][0], "Consultation/ConsultationDtos.cs", "AgentFaqMatchItemDto")
+
+
+def test_agent_5_requests_match_the_backend_dtos_the_service_sends(client):
+    """The .NET AgentService posts these payloads; a rename on the C# side must fail here."""
+    triage_request = {"subject": "Where do I learn statistics?", "body": "I need a guide for statistics skills.",
+                      "context_type": "CareerDiscovery", "context_summary": "Career Discovery result",
+                      "academic_stage": "A/L"}
+    assert set(dto_fields("Consultation/ConsultationDtos.cs", "AgentTriageRequestDto")) <= set(triage_request)
+
+    brief_request = dict(triage_request, student_evidence="{}")
+    assert set(dto_fields("Consultation/ConsultationDtos.cs", "AgentBriefRequestDto")) <= set(brief_request)
+
+    draft_request = dict(brief_request, tone="Supportive")
+    assert set(dto_fields("Consultation/ConsultationDtos.cs", "AgentDraftRequestDto")) <= set(draft_request)
+
+    assert set(dto_fields("Consultation/ConsultationDtos.cs", "AgentFaqMatchRequestDto")) <= {"question"}

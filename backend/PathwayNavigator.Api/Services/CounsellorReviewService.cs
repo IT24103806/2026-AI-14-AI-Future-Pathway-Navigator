@@ -235,6 +235,7 @@ public class CounsellorReviewService : ICounsellorReviewService
         AgentStatus = r.AgentStatus, ValidationResultsJson = r.ValidationResultsJson,
         ToolCallsJson = r.ToolCallsJson, ExecutionTraceJson = r.ExecutionTraceJson,
         AgentError = r.AgentError, CounsellorFeedback = r.CounsellorFeedback,
+        ConsultantAdviceJson = r.ConsultantAdviceJson,
         CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt, ReviewedAt = r.ReviewedAt
     };
 }

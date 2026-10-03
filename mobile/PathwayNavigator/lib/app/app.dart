@@ -10,6 +10,8 @@ import '../features/onboarding/data/onboarding_repository.dart';
 import '../features/privacy/presentation/consent_controller.dart';
 import '../features/profile/data/profile_repository.dart';
 import '../features/reality_check/data/review_repository.dart';
+import '../features/support/data/consultation_repository.dart';
+import '../features/support/presentation/notification_controller.dart';
 import 'app_theme.dart';
 import 'dependencies.dart';
 import 'router.dart';
@@ -58,6 +60,22 @@ class _PathwayNavigatorAppState extends State<PathwayNavigatorApp> {
         Provider<OnboardingRepository>.value(value: deps.onboardingRepository),
         Provider<CareerRepository>.value(value: deps.careerRepository),
         Provider<ReviewRepository>.value(value: deps.reviewRepository),
+        Provider<ConsultationRepository>.value(value: deps.consultationRepository),
+        // One notification controller for the whole app: the badge in an app bar and the inbox
+        // screen must show the same unread count.
+        ChangeNotifierProxyProvider<AuthController, NotificationController>(
+          create: (_) => NotificationController(deps.consultationRepository),
+          update: (_, auth, controller) {
+            // `create` always runs before the first update, so the notifier is non-null here.
+            final notifications = controller!;
+            if (auth.isAuthenticated) {
+              notifications.start();
+            } else {
+              notifications.stop();
+            }
+            return notifications;
+          },
+        ),
       ],
       child: MaterialApp.router(
         title: 'Pathway Navigator',

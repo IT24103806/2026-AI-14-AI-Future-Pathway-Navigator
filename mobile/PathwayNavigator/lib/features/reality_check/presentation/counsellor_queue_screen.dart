@@ -6,6 +6,7 @@ import '../../../core/constants/routes.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../support/presentation/notifications_screen.dart';
 import '../data/review_models.dart';
 import '../data/review_repository.dart';
 import 'counsellor_queue_controller.dart';
@@ -46,6 +47,7 @@ class _QueueBody extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Approval Centre'),
         actions: [
+          NotificationBell(onPressed: () => context.push(AppRoutes.notifications)),
           IconButton(
             tooltip: 'Settings',
             onPressed: () => context.push(AppRoutes.settings),

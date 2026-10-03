@@ -1,5 +1,8 @@
 export const ROLES = {
   STUDENT: 'Student',
+  // Consultant answers student questions and writes guidance back into the journey; a Counsellor owns
+  // the approval decision, and an Admin provisions consultant accounts.
+  CONSULTANT: 'Consultant',
   COUNSELLOR: 'Counsellor',
   ADMIN: 'Admin',
 };
@@ -28,4 +31,10 @@ export const API_ROUTES = {
   PATHWAY_PLANNER_PLAN: '/pathway-planner/plan',
   PATHWAY_PLANNER_LATEST: '/pathway-planner/me/latest',
   PATHWAY_PLANNER_MY_PLANS: '/pathway-planner/me',
+  CONSULTATIONS: '/consultations',
+  CONSULTATIONS_ME: '/consultations/me',
+  CONSULTANT_QUEUE: '/consultant/queue',
+  CONSULTANT_STATS: '/consultant/me/stats',
+  NOTIFICATIONS: '/notifications',
+  NOTIFICATIONS_UNREAD: '/notifications/unread-count',
 };

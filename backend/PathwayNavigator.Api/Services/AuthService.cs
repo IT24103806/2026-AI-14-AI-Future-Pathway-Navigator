@@ -40,16 +40,17 @@ namespace PathwayNavigator.Api.Services
                 return null; // Signals duplicate user conflict
             }
 
-            // 2. Fetch or validate requested role
-            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == request.RoleName);
+            // 2. SECURITY: self-service registration always creates a Student.
+            //
+            // Previously this trusted `request.RoleName`, so anyone could register themselves as
+            // Counsellor or Admin and reach the approval queue - a privilege escalation by design.
+            // Staff accounts (Consultant included) are provisioned only by an Admin, via
+            // ConsultantAccountService / the /api/admin/consultants endpoints. `RoleName` is still
+            // accepted on the DTO for backwards compatibility with the Flutter client but is ignored.
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
             if (role == null)
             {
-                // Fallback to Student role if unspecified role requested
-                role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
-                if (role == null)
-                {
-                    throw new InvalidOperationException("Default 'Student' role is missing from database.");
-                }
+                throw new InvalidOperationException("Default 'Student' role is missing from database.");
             }
 
             // 3. Hash password securely using BCrypt

@@ -74,6 +74,15 @@ public class PathwayReview
 
     public string? CounsellorFeedback { get; set; }
 
+    /// <summary>
+    /// Guidance written back by a Consultant after answering a student's Reality Check question.
+    /// Serialized <c>List&lt;ConsultantAdviceItem&gt;</c>: { consultantName, createdAt, consultationId, note, resources[] }.
+    ///
+    /// Two-way value: the student reads it inside the Reality Check panel they were stuck on, and the
+    /// approving counsellor sees it in the same evidence view before making a decision.
+    /// </summary>
+    public string ConsultantAdviceJson { get; set; } = "[]";
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -22,6 +22,9 @@ namespace PathwayNavigator.Api.Models
         // Navigation property for Student Profile
         public StudentProfile? StudentProfile { get; set; }
 
+        /// <summary>Set only for users holding the Consultant role.</summary>
+        public ConsultantProfile? ConsultantProfile { get; set; }
+
         // Audit Fields[cite: 2]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

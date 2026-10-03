@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/routes.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/common_widgets.dart';
+import '../../support/data/consultation_models.dart';
+import '../../support/presentation/widgets/ask_consultant_sheet.dart';
+import '../../support/presentation/widgets/consultant_note.dart';
 import '../data/review_models.dart';
 import '../data/review_repository.dart';
 import 'reality_check_form.dart';
@@ -109,6 +112,33 @@ class _StudentRealityBody extends StatelessWidget {
           ],
           ReviewEvidenceView(review: review),
           SectionCard(title: 'Counsellor feedback', icon: Icons.record_voice_over_outlined, child: Text(feedback)),
+          // Answers a consultant wrote back to this review are attached to the review itself.
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ConsultantNote(
+              guidance: review.consultantAdviceJson,
+              title: 'Consultant help with this review',
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: OutlinedButton.icon(
+              onPressed: () => showAskConsultantSheet(
+                context,
+                contextType: ConsultationContext.realityCheck,
+                contextRefId: review.id,
+                contextLabel: '${review.targetCareer} - ${review.status}',
+                prefillSubject: 'Question about my ${review.targetCareer} Reality Check',
+                prefillBody: review.status == ReviewStatus.needsRevision || review.status == ReviewStatus.rejected
+                    ? 'I do not understand the feedback on my Reality Check: '
+                        '"${review.counsellorFeedback ?? ''}". Can you explain what I need to change?'
+                    : 'I would like to understand my Reality Check result '
+                        '(${review.status}, feasibility ${review.feasibilityScore}%). Can you explain what it means for me?',
+              ),
+              icon: const Icon(Icons.support_agent_outlined),
+              label: const Text('Ask a consultant about this review'),
+            ),
+          ),
           if (controller.canRevise && !controller.revisionOpen)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),

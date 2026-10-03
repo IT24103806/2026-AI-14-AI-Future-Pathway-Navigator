@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/routes.dart';
+import '../../support/presentation/notifications_screen.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../profile/data/profile_repository.dart';
@@ -40,6 +41,12 @@ class _DashboardBody extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Pathway Navigator'),
         actions: [
+          IconButton(
+            tooltip: 'My questions',
+            onPressed: () => context.push(AppRoutes.support),
+            icon: const Icon(Icons.support_agent_outlined),
+          ),
+          NotificationBell(onPressed: () => context.push(AppRoutes.notifications)),
           IconButton(
             tooltip: 'Settings',
             onPressed: () => context.push(AppRoutes.settings),

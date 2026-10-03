@@ -88,8 +88,33 @@ void main() {
     });
 
     test('settings is open to every signed-in role', () {
-      for (final role in [Roles.student, Roles.counsellor, Roles.admin]) {
+      for (final role in [Roles.student, Roles.consultant, Roles.counsellor, Roles.admin]) {
         expect(redirect('/settings', role: role), isNull);
+      }
+    });
+
+    test('the consultant desk is for consultants and admins only', () {
+      expect(redirect(AppRoutes.consultant, role: Roles.consultant), isNull);
+      expect(redirect(AppRoutes.consultant, role: Roles.admin), isNull);
+      expect(redirect(AppRoutes.consultant, role: Roles.counsellor), '/counsellor');
+      expect(redirect(AppRoutes.consultant, role: Roles.student), '/student');
+    });
+
+    test('a consultant can never reach the approval centre or student screens', () {
+      expect(redirect('/counsellor', role: Roles.consultant), '/consultant');
+      expect(redirect('/counsellor/review/1', role: Roles.consultant), '/consultant');
+      expect(redirect('/admin', role: Roles.consultant), '/consultant');
+      expect(redirect('/student/reality-check', role: Roles.consultant), '/consultant');
+    });
+
+    test('the student support inbox stays inside the student area', () {
+      expect(redirect(AppRoutes.support, role: Roles.student), isNull);
+      expect(redirect(AppRoutes.support, role: Roles.consultant), '/consultant');
+    });
+
+    test('notifications are reachable for every signed-in role', () {
+      for (final role in [Roles.student, Roles.consultant, Roles.counsellor, Roles.admin]) {
+        expect(redirect(AppRoutes.notifications, role: role), isNull, reason: role);
       }
     });
   });

@@ -79,6 +79,14 @@ namespace PathwayNavigator.Api.DTOs.Pathway
         [JsonPropertyName("next_action")]
         public string NextAction { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Consultant guidance attached to this roadmap (stages, resources, checklists). Serialized
+        /// <c>List&lt;RoadmapGuidanceItem&gt;</c>. Rendered as a "Consultant-recommended" resource on the
+        /// matching milestone, so an answer arrives where the student asked rather than in a separate inbox.
+        /// </summary>
+        [JsonPropertyName("consultant_guidance_json")]
+        public string ConsultantGuidanceJson { get; set; } = "[]";
+
         [JsonPropertyName("validation_errors")]
         public List<string> ValidationErrors { get; set; } = new();
 

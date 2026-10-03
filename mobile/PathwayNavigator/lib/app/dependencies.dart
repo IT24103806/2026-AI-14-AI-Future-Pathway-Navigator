@@ -13,6 +13,7 @@ import '../features/privacy/data/consent_store.dart';
 import '../features/privacy/presentation/consent_controller.dart';
 import '../features/profile/data/profile_repository.dart';
 import '../features/reality_check/data/review_repository.dart';
+import '../features/support/data/consultation_repository.dart';
 
 /// Composition root: the one place where concrete classes are chosen and wired together.
 ///
@@ -28,6 +29,7 @@ class AppDependencies {
     required this.onboardingRepository,
     required this.careerRepository,
     required this.reviewRepository,
+    required this.consultationRepository,
     this.dispose,
   });
 
@@ -61,6 +63,7 @@ class AppDependencies {
       onboardingRepository: RemoteOnboardingRepository(api),
       careerRepository: RemoteCareerRepository(api),
       reviewRepository: RemoteReviewRepository(api),
+      consultationRepository: RemoteConsultationRepository(api),
       dispose: api.close,
     );
   }
@@ -73,5 +76,6 @@ class AppDependencies {
   final OnboardingRepository onboardingRepository;
   final CareerRepository careerRepository;
   final ReviewRepository reviewRepository;
+  final ConsultationRepository consultationRepository;
   final VoidCallback? dispose;
 }

@@ -415,6 +415,22 @@ app will run.
 
 ---
 
+## Consultant accounts (support channel)
+
+The `Consultant` role row is seeded by the migration, but consultant *users* are not — an Admin creates
+them through the app (`Admin → Consultant management`) or `POST /api/admin/consultants`. That call hashes
+the password with BCrypt, creates the `ConsultantProfile`, and is safe to retry: a duplicate email
+returns 409.
+
+Two background behaviours to be aware of when reading logs:
+
+* `ConsultationSlaHostedService` sweeps every 300 s (`Consultation:SlaSweepSeconds`), notifies the assigned
+  consultant about breaches, pushes unclaimed P1 cases older than 12 h to Admins, and auto-expires
+  `AwaitingStudent` cases after 14 days. Dedupe keys make every notification idempotent, so a restart does
+  not re-notify.
+* Agent 5 (`AiServiceSettings:EnableConsultantCopilot`, default `true`) is assistive only: briefs, triage and
+  draft replies are shown to the consultant, and nothing is ever sent to a student automatically.
+
 ## Operational notes
 
 - **Swagger is public in production.** `Program.cs` calls `UseSwagger()` and
