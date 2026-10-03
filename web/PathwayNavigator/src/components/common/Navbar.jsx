@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { dashboardPathForRole } from '../../utils/roleRoutes';
+import { canAccessConsultantDesk, dashboardPathForRole } from '../../utils/roleRoutes';
 import BrandMark from './BrandMark';
 import ThemeToggle from './ThemeToggle';
+import NotificationBell from '../consultation/NotificationBell';
 
 const initialsFor = (user) => {
   const source = user?.fullName || user?.email || 'U';
@@ -30,6 +31,13 @@ const Navbar = () => {
           : []),
         ...(role === 'Counsellor' || role === 'Admin'
           ? [{ to: '/counsellor/dashboard', label: '✅ Approval Centre' }]
+          : []),
+        // Guidance (Consultant) and authority (Counsellor) are separate desks on purpose.
+        ...(canAccessConsultantDesk(role)
+          ? [{ to: '/consultant/dashboard', label: '🤝 Consultant Desk' }]
+          : []),
+        ...(role === 'Student'
+          ? [{ to: '/student/support', label: '🙋 My Questions' }]
           : []),
         { to: dashboardPathForRole(role), label: '📊 Dashboard' },
       ]
@@ -103,6 +111,7 @@ const Navbar = () => {
 
           <div className="nav-actions">
             <ThemeToggle />
+            {isAuthenticated && <NotificationBell />}
 
             {isAuthenticated ? (
               <div className="nav-user-section">

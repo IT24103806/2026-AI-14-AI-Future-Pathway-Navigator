@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   analyzeCareerPathsApi,
@@ -17,6 +17,10 @@ import PrimaryButton from '../components/common/PrimaryButton';
 import AlertBanner from '../components/common/AlertBanner';
 import PathwayRecommendationCard from '../components/pathway/PathwayRecommendationCard';
 import JourneySteps from '../components/common/JourneySteps';
+import AskConsultantDialog from '../components/consultation/AskConsultantDialog';
+import ConsultationThread from '../components/consultation/ConsultationThread';
+import ConsultantNote from '../components/consultation/ConsultantNote';
+import consultationApi from '../api/consultationApi';
 import Reveal from '../components/common/Reveal';
 
 const parseJsonList = (value) => {
@@ -54,6 +58,10 @@ const CareerDiscoveryPage = () => {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const [isPrefilled, setIsPrefilled] = useState(false);
+  // Consultant channel: which anchor the student is asking from, and a deep-linked thread.
+  const [askContext, setAskContext] = useState(null);
+  const [focusedConsultation, setFocusedConsultation] = useState(null);
+  const [consultationNotice, setConsultationNotice] = useState('');
   const [reviewInput, setReviewInput] = useState({ alStream: '', alResults: '', budgetLevel: 'Medium', currentSkills: '' });
 
   const upsertSavedPlan = useCallback((plan) => {
@@ -128,6 +136,15 @@ const CareerDiscoveryPage = () => {
       isMounted = false;
     };
   }, [upsertSavedPlan]);
+
+  // Notification deep link (`?consultation=<id>`): open the answer where the student left off.
+  useEffect(() => {
+    const consultationId = new URLSearchParams(window.location.search).get('consultation');
+    if (!consultationId) return;
+    consultationApi.getById(consultationId)
+      .then(setFocusedConsultation)
+      .catch(() => setConsultationNotice(''));
+  }, []);
 
   const startRealityCheck = async (event) => {
     event.preventDefault();
@@ -236,6 +253,20 @@ const CareerDiscoveryPage = () => {
       setIsDeciding(false);
     }
   };
+
+  // Consultant guidance written back onto the saved roadmap, rendered inside the pathway it belongs to.
+  const planGuidance = useMemo(() => {
+    if (!plannerResult?.consultant_guidance_json) return [];
+    try {
+      const parsed = JSON.parse(plannerResult.consultant_guidance_json);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, [plannerResult]);
+
+  const guidanceForPathway = (pathwayName) =>
+    plannerResult?.selected_pathway === pathwayName && planGuidance.length > 0 ? planGuidance : null;
 
   const decision = result ? DECISION_CONFIG[result.status] : null;
   const roadmapStages = plannerResult?.roadmap || [];
@@ -385,6 +416,14 @@ const CareerDiscoveryPage = () => {
                     rank={idx}
                     onBuildPlan={handleBuildPlan}
                     isBuilding={planningPathway === rec.pathway_name}
+                    consultantNote={guidanceForPathway(rec.pathway_name)}
+                    onAskConsultant={(pathwayName) => setAskContext({
+                      contextType: 'CareerDiscovery',
+                      contextRefId: result.id,
+                      contextLabel: pathwayName,
+                      prefillSubject: `Question about ${pathwayName}`,
+                      prefillBody: `I am looking at the ${pathwayName} pathway and I would like help understanding it.`,
+                    })}
                   />
                 ))}
               </div>
@@ -489,6 +528,10 @@ const CareerDiscoveryPage = () => {
                   <h3>{step.title}</h3>
                   <p>{step.outcome}</p>
                   <p className="text-dim">{step.actions.join(' ')}</p>
+                  {/* Guidance a consultant attached to this exact milestone. */}
+                  <ConsultantNote
+                    guidance={planGuidance.filter((item) => (item.stageKey ?? '').toLowerCase() === step.stage.toLowerCase())}
+                  />
                   <div className="roadmap-stage-footer">
                     <span className="data-source-badge data-source-simulated">
                       Estimated: {step.estimated_duration}
@@ -503,6 +546,20 @@ const CareerDiscoveryPage = () => {
                       />
                       <span>{isSavingThis ? 'Saving…' : isCompleted ? 'Completed' : 'Mark complete'}</span>
                     </label>
+                    <button
+                      type="button"
+                      className="ask-consultant-trigger"
+                      onClick={() => setAskContext({
+                        contextType: 'PathwayPlan',
+                        contextRefId: plannerResult.id,
+                        contextLabel: `${plannerResult.selected_pathway} · ${step.title}`,
+                        prefillSubject: `Help with the "${step.title}" step`,
+                        prefillBody: `I am on the "${step.title}" milestone of my ${plannerResult.selected_pathway} roadmap and I need help with: `,
+                        stageKey: step.stage,
+                      })}
+                    >
+                      🙋 Need help with this step?
+                    </button>
                   </div>
                 </div>
               );
@@ -510,6 +567,66 @@ const CareerDiscoveryPage = () => {
           </div>
         </section>
       )}
+
+      {askContext && (
+        <AskConsultantDialog
+          contextType={askContext.contextType}
+          contextRefId={askContext.contextRefId}
+          contextLabel={askContext.contextLabel}
+          prefillSubject={askContext.prefillSubject}
+          prefillBody={askContext.prefillBody}
+          onClose={() => setAskContext(null)}
+          onCreated={(created) => {
+            setConsultationNotice('Sent. A consultant will reply and you will get a notification.');
+            setFocusedConsultation(created);
+          }}
+        />
+      )}
+
+      {/* Opened by a notification deep link: the answer is readable here, without losing the page. */}
+      {focusedConsultation && (
+        <div className="consult-modal" role="dialog" aria-modal="true" aria-label="Consultant conversation">
+          <div className="consult-modal__card">
+            <header className="consult-modal__head">
+              <div>
+                <h2>🤝 Your consultant conversation</h2>
+                <p>You can reply here and carry on with your pathway.</p>
+              </div>
+              <button
+                type="button"
+                className="consult-modal__close"
+                onClick={() => setFocusedConsultation(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </header>
+            <ConsultationThread
+              consultation={focusedConsultation}
+              variant="student"
+              onSend={async (body) => {
+                try {
+                  setFocusedConsultation(await consultationApi.addMessage(focusedConsultation.id, body));
+                  return true;
+                } catch {
+                  setConsultationNotice('Your message could not be sent.');
+                  return false;
+                }
+              }}
+              onClose={async (id, payload) => {
+                try {
+                  setFocusedConsultation(await consultationApi.close(id, payload));
+                  setConsultationNotice('Marked as resolved.');
+                } catch {
+                  setConsultationNotice('That could not be closed.');
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {consultationNotice && <p className="review-alert success" role="status">{consultationNotice}</p>}
     </div>
   );
 };

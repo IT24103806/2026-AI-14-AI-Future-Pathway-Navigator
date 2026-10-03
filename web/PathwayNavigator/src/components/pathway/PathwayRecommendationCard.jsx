@@ -4,8 +4,16 @@ import MarketMeter from './MarketMeter';
 import TrendBadge from './TrendBadge';
 import MissingSkillsPanel from './MissingSkillsPanel';
 import RoadmapTimeline from './RoadmapTimeline';
+import ConsultantNote from '../consultation/ConsultantNote';
 
-const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuilding }) => {
+const PathwayRecommendationCard = ({
+  recommendation,
+  rank,
+  onBuildPlan,
+  isBuilding,
+  onAskConsultant,
+  consultantNote,
+}) => {
   const {
     label,
     pathway_name: pathwayName,
@@ -81,7 +89,7 @@ const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuildi
         </div>
       </div>
 
-      <RoadmapTimeline roadmap={roadmap} />
+      <RoadmapTimeline roadmap={roadmap} guidance={consultantNote?.stageGuidance} />
 
       {hasDeepDive && (
         <div className="career-deep-dive-container">
@@ -152,14 +160,29 @@ const PathwayRecommendationCard = ({ recommendation, rank, onBuildPlan, isBuildi
         </div>
       )}
 
-      <button
-        type="button"
-        className="btn btn-sm btn-primary"
-        onClick={() => onBuildPlan(pathwayName)}
-        disabled={isBuilding}
-      >
-        {isBuilding ? 'Building roadmap...' : 'Build step-by-step roadmap'}
-      </button>
+      <div className="pathway-card-actions">
+        <button
+          type="button"
+          className="btn btn-sm btn-primary"
+          onClick={() => onBuildPlan(pathwayName)}
+          disabled={isBuilding}
+        >
+          {isBuilding ? 'Building roadmap...' : 'Build step-by-step roadmap'}
+        </button>
+        {onAskConsultant && (
+          <button
+            type="button"
+            className="ask-consultant-trigger"
+            onClick={() => onAskConsultant(pathwayName)}
+            title="Ask a human consultant about this pathway"
+          >
+            🙋 Ask about this pathway
+          </button>
+        )}
+      </div>
+
+      {/* Guidance written back by a consultant for this pathway is shown in place, not in an inbox. */}
+      {consultantNote && <ConsultantNote guidance={consultantNote} title="Consultant note on this pathway" />}
     </div>
   );
 };
