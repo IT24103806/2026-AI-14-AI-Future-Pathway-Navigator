@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using PathwayNavigator.Api.DTOs.Consultation;
 using PathwayNavigator.Api.DTOs.Onboarding;
 using PathwayNavigator.Api.DTOs.Pathway;
 using PathwayNavigator.Api.DTOs.Profile;
@@ -227,6 +228,75 @@ namespace PathwayNavigator.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to communicate with AI microservice (Agent 3) at {BaseAddress}", _httpClient.BaseAddress);
+            }
+
+            return null;
+        }
+
+        // ==================================================================== Agent 5 · Consultant Copilot
+        //
+        // Agent 5 prepares work for a human: it triages a student's question, summarises the evidence
+        // the other agents produced, and drafts a reply. It never sends anything and never decides a
+        // case - the consultant does. Every call therefore returns null on failure rather than a
+        // fabricated answer, and the caller falls back to a manual workflow.
+
+        public bool SupportsConsultationCopilot =>
+            _configuration.GetValue("AiServiceSettings:EnableConsultantCopilot", true);
+
+        public Task<AgentTriageResultDto?> ProcessAgent5TriageAsync(AgentTriageRequestDto request) =>
+            PostAgent5Async<AgentTriageResultDto>("/api/v1/agent-5/triage", request, "Agent 5 triage");
+
+        public Task<AgentBriefResultDto?> ProcessAgent5BriefAsync(AgentBriefRequestDto request) =>
+            PostAgent5Async<AgentBriefResultDto>("/api/v1/agent-5/brief", request, "Agent 5 brief");
+
+        public Task<AgentDraftResultDto?> ProcessAgent5DraftReplyAsync(AgentDraftRequestDto request) =>
+            PostAgent5Async<AgentDraftResultDto>("/api/v1/agent-5/draft-reply", request, "Agent 5 draft reply");
+
+        public Task<AgentFaqMatchResultDto?> ProcessAgent5FaqMatchAsync(AgentFaqMatchRequestDto request) =>
+            PostAgent5Async<AgentFaqMatchResultDto>("/api/v1/agent-5/faq-match", request, "Agent 5 FAQ match");
+
+        /// <summary>
+        /// Shared POST-and-deserialize path for Agent 5. Deliberately does not retry 4xx: an invalid
+        /// payload is a bug to surface in logs, not a transient condition to hammer.
+        /// </summary>
+        private async Task<TResponse?> PostAgent5Async<TResponse>(string path, object payload, string label)
+            where TResponse : class
+        {
+            if (!SupportsConsultationCopilot)
+            {
+                return null;
+            }
+
+            for (var attempt = 1; attempt <= 2; attempt++)
+            {
+                try
+                {
+                    using var response = await _httpClient.PostAsJsonAsync(path, payload);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return await response.Content.ReadFromJsonAsync<TResponse>(
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+
+                    _logger.LogWarning("{Label} attempt {Attempt} returned {StatusCode}", label, attempt, response.StatusCode);
+                    if ((int)response.StatusCode < 500)
+                    {
+                        return null;
+                    }
+                }
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogError(ex, "{Label} attempt {Attempt} timed out", label, attempt);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, "{Label} attempt {Attempt} failed", label, attempt);
+                }
+
+                if (attempt < 2)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(200));
+                }
             }
 
             return null;

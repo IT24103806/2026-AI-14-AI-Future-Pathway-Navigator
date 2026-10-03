@@ -29,6 +29,13 @@ public class PathwayReviewResponseDto
     public string ExecutionTraceJson { get; set; } = "[]";
     public string? AgentError { get; set; }
     public string? CounsellorFeedback { get; set; }
+
+    /// <summary>
+    /// Notes a Consultant wrote back while answering the student's Reality Check question. Shown to the
+    /// student in the pending panel and to the deciding counsellor in this same evidence view.
+    /// </summary>
+    public string ConsultantAdviceJson { get; set; } = "[]";
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? ReviewedAt { get; set; }

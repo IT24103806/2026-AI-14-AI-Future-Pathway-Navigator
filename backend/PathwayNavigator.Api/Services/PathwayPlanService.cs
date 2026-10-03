@@ -195,6 +195,7 @@ namespace PathwayNavigator.Api.Services
                 MissingSkills = missingSkills,
                 CompletedPhases = completedPhases,
                 NextAction = entity.NextAction,
+                ConsultantGuidanceJson = entity.ConsultantGuidanceJson,
                 UpdatedAt = entity.UpdatedAt
             };
         }
