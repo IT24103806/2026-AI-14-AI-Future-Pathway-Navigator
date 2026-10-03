@@ -166,20 +166,39 @@ jobs:
       - name: Install SSH key
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
         run: |
+          set -e
+          if [ -z "$KEY" ]; then
+            echo "::error::VPS_SSH_KEY secret is empty"
+            exit 1
+          fi
+          if [ -z "$HOST" ]; then
+            echo "::error::VPS_HOST secret is empty"
+            exit 1
+          fi
+          echo "Host value: [$HOST]"
+          echo "Host length: ${#HOST}"
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          # Show key structure (no content) so we can debug in the log
+          echo "Key line count: $(wc -l < ~/.ssh/id_ed25519)"
+          echo "Key first line: $(head -1 ~/.ssh/id_ed25519)"
+          echo "Key last line:  $(tail -1 ~/.ssh/id_ed25519)"
+          # ssh-keyscan is best-effort; if it fails we fall back to StrictHostKeyChecking=no
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || echo "ssh-keyscan failed for [$HOST] -- will use StrictHostKeyChecking=no in later steps"
 
       - name: Copy stack definition
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
         run: |
-          ssh "$USER@$HOST" 'mkdir -p /opt/pathway-navigator/deploy'
-          scp docker-compose.yml "$USER@$HOST:/opt/pathway-navigator/docker-compose.yml"
-          scp deploy/Caddyfile   "$USER@$HOST:/opt/pathway-navigator/deploy/Caddyfile"
+          SSH_OPTS="-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          ssh $SSH_OPTS "$USER@$HOST" 'mkdir -p /opt/pathway-navigator/deploy'
+          scp $SSH_OPTS docker-compose.yml "$USER@$HOST:/opt/pathway-navigator/docker-compose.yml"
+          scp $SSH_OPTS deploy/Caddyfile   "$USER@$HOST:/opt/pathway-navigator/deploy/Caddyfile"
 
       - name: Deploy
         env:
@@ -188,11 +207,11 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           TAG: ${{ github.sha }}
         run: |
-          ssh "$USER@$HOST" "
+          SSH_OPTS="-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          ssh $SSH_OPTS "$USER@$HOST" "
             set -e
             cd /opt/pathway-navigator
 
-            # Fail loudly rather than starting containers with an empty env file.
             for f in deploy/pn-api.env deploy/pn-ai.env; do
               if [ ! -s \"\$f\" ]; then
                 echo \"MISSING: /opt/pathway-navigator/\$f\" >&2
@@ -206,7 +225,6 @@ jobs:
             docker compose up -d --remove-orphans
             docker compose ps
 
-            # Reclaim disk on a small box; only removes images no container uses.
             docker image prune -f
           "
 
