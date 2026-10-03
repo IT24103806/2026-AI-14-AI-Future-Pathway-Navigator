@@ -167,6 +167,9 @@ namespace PathwayNavigator.Api.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ConsultationMessage>()
+                .Property(m => m.Id)
+                .ValueGeneratedNever();
+            modelBuilder.Entity<ConsultationMessage>()
                 .HasIndex(m => new { m.ConsultationRequestId, m.CreatedAt });
             modelBuilder.Entity<ConsultationMessage>()
                 .HasOne(m => m.Author)
@@ -174,6 +177,9 @@ namespace PathwayNavigator.Api.Data
                 .HasForeignKey(m => m.AuthorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<ConsultationAudit>()
+                .Property(a => a.Id)
+                .ValueGeneratedNever();
             modelBuilder.Entity<ConsultationAudit>()
                 .HasIndex(a => new { a.ConsultationRequestId, a.CreatedAt });
             modelBuilder.Entity<ConsultationAudit>()

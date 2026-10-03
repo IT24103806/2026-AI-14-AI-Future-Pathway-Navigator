@@ -118,8 +118,10 @@ public class ConsultationService : IConsultationService
             UpdatedAt = now
         };
 
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationRequests.Add(request);
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = studentId,
             Action = "Created",
             FromStatus = "None",
@@ -127,8 +129,6 @@ public class ConsultationService : IConsultationService
             Details = $"Raised from {snapshot.ContextType}. Triage: {category}/{priority}.",
             CreatedAt = now
         });
-
-        _context.ConsultationRequests.Add(request);
 
         // The request and its audit row are one unit of work. The notification is intentionally written
         // afterwards so a notification failure can never lose the student's question.
@@ -202,7 +202,6 @@ public class ConsultationService : IConsultationService
     public async Task<ConsultationResponseDto?> AddStudentMessageAsync(Guid studentId, Guid consultationId, string body)
     {
         var request = await _context.ConsultationRequests
-            .Include(r => r.Student)
             .SingleOrDefaultAsync(r => r.Id == consultationId && r.StudentId == studentId);
 
         if (request == null)
@@ -236,8 +235,9 @@ public class ConsultationService : IConsultationService
         };
         request.UpdatedAt = now;
 
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = studentId,
             Action = "StudentReplied",
             FromStatus = previous,
@@ -289,8 +289,9 @@ public class ConsultationService : IConsultationService
         request.StudentRating = input.Rating;
         request.StudentFeedback = string.IsNullOrWhiteSpace(input.Feedback) ? null : input.Feedback.Trim();
 
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = studentId,
             Action = "Closed",
             FromStatus = previous,
@@ -349,8 +350,9 @@ public class ConsultationService : IConsultationService
         // A reopened request must be worked again, so it gets a fresh SLA clock.
         request.SlaDueAt = DueAt(request.Priority, now);
 
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = studentId,
             Action = "Reopened",
             FromStatus = previous,
@@ -459,10 +461,12 @@ public class ConsultationService : IConsultationService
 
     public async Task<ConsultationResponseDto?> BuildResponseAsync(Guid consultationId, Guid requesterId, bool forStaff)
     {
+        // Student and message Author have non-nullable Guid foreign keys, which EF Core's InMemory
+        // and relational providers translate as INNER JOINs when Included. Resolving User display
+        // names in MapInternalAsync guarantees a request or message is never filtered out when a
+        // unit test seeds a bare UserId without a matching Users row.
         var query = _context.ConsultationRequests.AsNoTracking()
-            .Include(r => r.Student)
-            .Include(r => r.AssignedConsultant)
-            .Include(r => r.Messages).ThenInclude(m => m.Author)
+            .Include(r => r.Messages)
             .Include(r => r.AuditEvents)
             .AsQueryable();
 
@@ -485,13 +489,34 @@ public class ConsultationService : IConsultationService
     {
         var messages = request.Messages ?? new List<ConsultationMessage>();
 
+        var userIds = new HashSet<Guid> { request.StudentId };
+        if (request.AssignedConsultantId.HasValue)
+        {
+            userIds.Add(request.AssignedConsultantId.Value);
+        }
+
+        foreach (var message in messages)
+        {
+            userIds.Add(message.AuthorUserId);
+        }
+
+        var usersById = await _context.Users.AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+
+        User? ResolveUser(Guid? id, User? navigation) =>
+            navigation ?? (id.HasValue && usersById.TryGetValue(id.Value, out var found) ? found : null);
+
+        var student = ResolveUser(request.StudentId, request.Student);
+        var assignedConsultant = ResolveUser(request.AssignedConsultantId, request.AssignedConsultant);
+
         var dto = new ConsultationResponseDto
         {
             Id = request.Id,
             StudentId = request.StudentId,
-            StudentName = DisplayName(request.Student),
+            StudentName = DisplayName(student),
             AssignedConsultantId = request.AssignedConsultantId,
-            AssignedConsultantName = request.AssignedConsultant == null ? null : DisplayName(request.AssignedConsultant),
+            AssignedConsultantName = request.AssignedConsultantId == null ? null : DisplayName(assignedConsultant),
             ContextType = request.ContextType,
             ContextRefId = request.ContextRefId,
             ContextSnapshotJson = request.ContextSnapshotJson,
@@ -532,17 +557,21 @@ public class ConsultationService : IConsultationService
             .Where(m => forStaff || !m.IsInternal)
             .Where(m => m.DeletedAt == null)
             .OrderBy(m => m.CreatedAt)
-            .Select(m => new ConsultationMessageDto
+            .Select(m =>
             {
-                Id = m.Id,
-                AuthorUserId = m.AuthorUserId,
-                AuthorName = m.IsInternal ? $"{DisplayName(m.Author)} (internal)" : DisplayName(m.Author),
-                AuthorRole = m.AuthorRole,
-                Body = m.Body,
-                IsInternal = m.IsInternal,
-                Resources = ParseResources(m.ResourcesJson),
-                CreatedAt = m.CreatedAt,
-                EditedAt = m.EditedAt
+                var author = ResolveUser(m.AuthorUserId, m.Author);
+                return new ConsultationMessageDto
+                {
+                    Id = m.Id,
+                    AuthorUserId = m.AuthorUserId,
+                    AuthorName = m.IsInternal ? $"{DisplayName(author)} (internal)" : DisplayName(author),
+                    AuthorRole = m.AuthorRole,
+                    Body = m.Body,
+                    IsInternal = m.IsInternal,
+                    Resources = ParseResources(m.ResourcesJson),
+                    CreatedAt = m.CreatedAt,
+                    EditedAt = m.EditedAt
+                };
             }).ToList();
 
         if (forStaff && !string.IsNullOrWhiteSpace(request.AgentTriageJson))
