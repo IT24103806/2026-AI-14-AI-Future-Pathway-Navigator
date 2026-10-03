@@ -34,6 +34,7 @@ Future<AppDependencies> buildDeps({
     onboardingRepository: FakeOnboardingRepository(),
     careerRepository: FakeCareerRepository(),
     reviewRepository: reviewRepository ?? FakeReviewRepository(),
+    consultationRepository: FakeConsultationRepository(),
   );
 }
 

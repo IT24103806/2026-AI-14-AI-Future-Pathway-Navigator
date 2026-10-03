@@ -158,6 +158,7 @@ class PathwayPlan {
     required this.validationErrors,
     this.id,
     this.completedPhases = const <String>[],
+    this.consultantGuidanceJson = '[]',
   });
 
   final String? id;
@@ -167,6 +168,9 @@ class PathwayPlan {
   final List<RoadmapStage> roadmap;
   final List<String> missingSkills;
   final List<String> completedPhases;
+
+  /// Guidance a consultant wrote back to this plan (list of `{stageKey, note, checklist, ...}`).
+  final String consultantGuidanceJson;
   final String nextAction;
   final List<String> validationErrors;
 
@@ -181,6 +185,7 @@ class PathwayPlan {
         roadmap: asMapList(json['roadmap']).map(RoadmapStage.fromJson).toList(),
         missingSkills: asStringList(json['missing_skills']),
         completedPhases: asStringList(json['completed_phases']),
+        consultantGuidanceJson: asString(json['consultant_guidance_json'], '[]'),
         nextAction: asString(json['next_action']),
         validationErrors: asStringList(json['validation_errors']),
       );
