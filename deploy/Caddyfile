@@ -15,11 +15,11 @@
 # real DNS name pointed at the VPS public IP, and it must be listed in
 # Cors__AllowedOrigins on the API or the browser blocks every request.
 # ---------------------------------------------------------------------------
-api.pathwaynavigator.duckdns.org {
+pathwaynavigator.duckdns.org {
 	encode zstd gzip
 
 	# Never let Caddy answer an unexpected hostname with a certificate for this one.
-	@bogus not host api.pathwaynavigator.duckdns.org
+	@bogus not host pathwaynavigator.duckdns.org
 	respond @bogus 444
 
 	reverse_proxy api:8080 {
