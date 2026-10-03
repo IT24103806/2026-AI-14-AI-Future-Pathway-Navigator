@@ -1,7 +1,7 @@
 {
 	# Caddy obtains and renews Let's Encrypt certificates automatically. Put a real
 	# address here so you get expiry warnings instead of silent failures.
-	email you@example.com
+	email menuralakvindu31711@gmail.com
 
 	# Uncomment for the very first run if you have been testing repeatedly and are
 	# close to the Let's Encrypt rate limit, then comment it out again and reload.
@@ -15,11 +15,11 @@
 # real DNS name pointed at the VPS public IP, and it must be listed in
 # Cors__AllowedOrigins on the API or the browser blocks every request.
 # ---------------------------------------------------------------------------
-api.yourdomain.com {
+api.pathwaynavigator.duckdns.org {
 	encode zstd gzip
 
 	# Never let Caddy answer an unexpected hostname with a certificate for this one.
-	@bogus not host api.yourdomain.com
+	@bogus not host api.pathwaynavigator.duckdns.org
 	respond @bogus 444
 
 	reverse_proxy api:8080 {
