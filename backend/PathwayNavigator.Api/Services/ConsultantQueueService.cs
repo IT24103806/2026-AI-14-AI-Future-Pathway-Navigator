@@ -50,8 +50,6 @@ public class ConsultantQueueService : IConsultantQueueService
         var pageSize = Math.Clamp(filter.PageSize, 1, 50);
 
         var query = _context.ConsultationRequests.AsNoTracking()
-            .Include(r => r.Student)
-            .Include(r => r.AssignedConsultant)
             .AsQueryable();
 
         var scope = (filter.Scope ?? "Open").Trim();
@@ -106,9 +104,14 @@ public class ConsultantQueueService : IConsultantQueueService
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var term = filter.Search.Trim().ToLower();
+            var matchingStudentIds = await _context.Users.AsNoTracking()
+                .Where(u => u.Email.ToLower().Contains(term)
+                            || (u.FullName != null && u.FullName.ToLower().Contains(term)))
+                .Select(u => u.Id)
+                .ToListAsync();
             query = query.Where(r => r.Subject.ToLower().Contains(term)
                                      || r.Body.ToLower().Contains(term)
-                                     || r.Student!.Email.ToLower().Contains(term));
+                                     || matchingStudentIds.Contains(r.StudentId));
         }
 
         // "sla" is the default because the desk must work the most urgent case first.
@@ -176,8 +179,9 @@ public class ConsultantQueueService : IConsultantQueueService
         request.AssignedConsultantId = consultantId;
         request.Status = ConsultationRequest.StatusClaimed;
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "Claimed",
             FromStatus = previous,
@@ -234,8 +238,9 @@ public class ConsultantQueueService : IConsultantQueueService
         request.AssignedConsultantId = null;
         request.Status = ConsultationRequest.StatusOpen;
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "Released",
             FromStatus = previous,
@@ -274,8 +279,9 @@ public class ConsultantQueueService : IConsultantQueueService
         request.AssignedConsultantId = consultantUserId;
         request.Status = ConsultationRequest.StatusClaimed;
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = adminId,
             Action = "Reassigned",
             FromStatus = previous,
@@ -304,7 +310,6 @@ public class ConsultantQueueService : IConsultantQueueService
     public async Task<ConsultationResponseDto?> ReplyAsync(Guid consultantId, bool isAdmin, Guid consultationId, ReplyConsultationDto input)
     {
         var request = await _context.ConsultationRequests
-            .Include(r => r.Student)
             .SingleOrDefaultAsync(r => r.Id == consultationId);
 
         if (request == null || !CanAccess(request, consultantId, isAdmin))
@@ -370,8 +375,9 @@ public class ConsultantQueueService : IConsultantQueueService
             request.ClosedAt = null;
         }
 
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "Replied",
             FromStatus = previous,
@@ -399,8 +405,13 @@ public class ConsultantQueueService : IConsultantQueueService
             DedupeKey = $"consultation-reply:{request.Id}:{request.AnsweredAt?.Ticks}"
         });
 
+        var studentEmail = request.Student?.Email ?? await _context.Users.AsNoTracking()
+            .Where(u => u.Id == request.StudentId)
+            .Select(u => u.Email)
+            .FirstOrDefaultAsync();
+
         await TrySendEmailAsync(
-            request.Student?.Email,
+            studentEmail,
             "Pathway Navigator - your consultant replied",
             $"A consultant answered your question \"{request.Subject}\". Open the app to read the answer - your pathway is waiting where you left it.");
 
@@ -427,8 +438,9 @@ public class ConsultantQueueService : IConsultantQueueService
         });
 
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "InternalNoteAdded",
             FromStatus = request.Status,
@@ -456,8 +468,9 @@ public class ConsultantQueueService : IConsultantQueueService
         // The SLA clock is relative to the moment the case was raised, not to the priority change.
         request.SlaDueAt = ConsultationService.DueAt(normalized, request.CreatedAt);
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "PriorityChanged",
             FromStatus = request.Status,
@@ -487,8 +500,9 @@ public class ConsultantQueueService : IConsultantQueueService
         var previous = request.Status;
         request.Status = ConsultationRequest.StatusEscalated;
         request.UpdatedAt = now;
-        request.AuditEvents.Add(new ConsultationAudit
+        _context.ConsultationAudits.Add(new ConsultationAudit
         {
+            ConsultationRequestId = request.Id,
             ActorUserId = consultantId,
             Action = "Escalated",
             FromStatus = previous,
@@ -715,9 +729,7 @@ public class ConsultantQueueService : IConsultantQueueService
     // ------------------------------------------------------------------------------ internals
 
     private async Task<ConsultationRequest?> LoadCaseAsync(Guid consultationId) =>
-        await _context.ConsultationRequests
-            .Include(r => r.Student)
-            .Include(r => r.AssignedConsultant)
+        await _context.ConsultationRequests.AsNoTracking()
             .SingleOrDefaultAsync(r => r.Id == consultationId);
 
     /// <summary>Pool cases are open to consultants; claimed cases only to their owner (or an Admin).</summary>

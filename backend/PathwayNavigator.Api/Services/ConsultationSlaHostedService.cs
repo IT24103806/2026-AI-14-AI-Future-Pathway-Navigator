@@ -144,8 +144,9 @@ public sealed class ConsultationSlaHostedService : BackgroundService
                 request.ClosedAt = now;
                 request.UpdatedAt = now;
                 request.ResolutionSummary ??= "Closed automatically after 14 days without a reply from the student.";
-                request.AuditEvents.Add(new ConsultationAudit
+                context.ConsultationAudits.Add(new ConsultationAudit
                 {
+                    ConsultationRequestId = request.Id,
                     ActorUserId = null,
                     Action = "AutoExpired",
                     FromStatus = previous,

@@ -33,12 +33,14 @@ jobs:
         # Publish the failing test output as a check annotation, not just in the log.
         dotnet test ./backend/PathwayNavigator.sln --no-build --configuration Release --verbosity normal > tests.txt 2>&1
         status=$?
-        # Annotations are capped per message, so publish only the failure blocks,
-        # folded into chunks that each fit.
-        grep -E 'FAIL|Failed|Error Message|Assert|Expected|Actual|Stack Trace' tests.txt \
-          | fold -w 3900 | tail -n 8 > failures.txt
-        if [ ! -s failures.txt ]; then tail -c 3900 tests.txt | fold -w 3900 | tail -n 1 > failures.txt; fi
-        while IFS= read -r chunk; do echo "::error::$chunk"; done < failures.txt
+        if [ $status -ne 0 ]; then
+          # Annotations are capped per message, so publish only the failure blocks,
+          # folded into chunks that each fit.
+          grep -E 'FAIL|Failed|Error Message|Assert|Expected|Actual|Stack Trace' tests.txt \
+            | fold -w 3900 | tail -n 8 > failures.txt
+          if [ ! -s failures.txt ]; then tail -c 3900 tests.txt | fold -w 3900 | tail -n 1 > failures.txt; fi
+          while IFS= read -r chunk; do echo "::error::$chunk"; done < failures.txt
+        fi
         exit $status
 
   # Encouraged React Web Application Pipeline
@@ -110,8 +112,10 @@ jobs:
         # publish the analyzer output as a single check annotation as well.
         flutter analyze > analysis.txt 2>&1
         status=$?
-        tr -d '\r' < analysis.txt | tail -c 60000 | tr '\n' '\t' > analysis.flat
-        echo "::error::$(cat analysis.flat)"
+        if [ $status -ne 0 ]; then
+          tr -d '\r' < analysis.txt | tail -c 60000 | tr '\n' '\t' > analysis.flat
+          echo "::error::$(cat analysis.flat)"
+        fi
         exit $status
     - name: Run Flutter tests
       run: flutter test --coverage
