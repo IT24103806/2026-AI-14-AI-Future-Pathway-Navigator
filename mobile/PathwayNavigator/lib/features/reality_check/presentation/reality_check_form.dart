@@ -162,7 +162,7 @@ class _RealityCheckFormState extends State<RealityCheckForm> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _stream,
-              decoration: fieldDecoration('A/L stream', hint: 'Physical Science'),
+              decoration: fieldDecoration('A/L stream', hint: 'e.g. Physical Science'),
               validator: (value) => Validators.length(value, min: 2, max: 80, label: 'A/L stream'),
             ),
             const SizedBox(height: 16),

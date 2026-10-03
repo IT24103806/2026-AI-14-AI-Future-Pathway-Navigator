@@ -7,6 +7,9 @@ import 'package:pathway_navigator/features/reality_check/presentation/student_re
 import '../support/fakes.dart';
 
 Future<void> pumpScreen(WidgetTester tester, FakeReviewRepository repository) async {
+  tester.view.physicalSize = const Size(1000, 4000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(
     Provider<ReviewRepository>.value(
       value: repository,
@@ -32,9 +35,6 @@ void main() {
   });
 
   testWidgets('NeedsRevision opens a pre-filled form; adding a missing skill and resubmitting calls resubmit', (tester) async {
-    tester.view.physicalSize = const Size(1000, 4000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
     final repository = FakeReviewRepository()
       ..myStatus = fakeReview(status: 'NeedsRevision')
       ..resubmitResult = fakeReview(id: 'r2', status: 'Approved');
