@@ -1,6 +1,13 @@
 # Secrets and local configuration
 .env
 appsettings.Development.json
+appsettings.json
+
+# Production runtime config lives only on the VPS (/opt/pathway-navigator/deploy/).
+# The committed *.example files are the templates.
+deploy/*.env
+deploy/.env
+!deploy/*.env.example
 
 # Python
 __pycache__/

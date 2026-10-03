@@ -1,0 +1,43 @@
+{
+	# Caddy obtains and renews Let's Encrypt certificates automatically. Put a real
+	# address here so you get expiry warnings instead of silent failures.
+	email you@example.com
+
+	# Uncomment for the very first run if you have been testing repeatedly and are
+	# close to the Let's Encrypt rate limit, then comment it out again and reload.
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# ---------------------------------------------------------------------------
+# The API -- the only thing this VPS serves.
+#
+# The React SPA lives on Cloudflare Pages and calls this origin, so it must be a
+# real DNS name pointed at the VPS public IP, and it must be listed in
+# Cors__AllowedOrigins on the API or the browser blocks every request.
+# ---------------------------------------------------------------------------
+api.yourdomain.com {
+	encode zstd gzip
+
+	# Never let Caddy answer an unexpected hostname with a certificate for this one.
+	@bogus not host api.yourdomain.com
+	respond @bogus 444
+
+	reverse_proxy api:8080 {
+		# Agent calls run an LLM plus market-data lookups behind this proxy. The
+		# API's own timeout to the Python service is 90s (AiServiceSettings:TimeoutSeconds)
+		# and the SPA waits 120s (apiClient.js), so buffering must not hold the
+		# response and there must be no proxy-side deadline shorter than those.
+		flush_interval -1
+
+		# Surface a real 502 instead of hanging if the API container is down.
+		health_uri /swagger/index.html
+		health_interval 30s
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MiB
+			roll_keep 3
+		}
+	}
+}
