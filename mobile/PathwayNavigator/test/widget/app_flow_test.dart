@@ -11,6 +11,7 @@ import 'package:pathway_navigator/features/privacy/data/consent_store.dart';
 import 'package:pathway_navigator/features/privacy/presentation/consent_controller.dart';
 
 import '../support/fakes.dart';
+import '../support/support_fakes.dart';
 
 Future<AppDependencies> buildDeps({
   bool consentAccepted = true,

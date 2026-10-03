@@ -33,8 +33,12 @@ jobs:
         # Publish the failing test output as a check annotation, not just in the log.
         dotnet test ./backend/PathwayNavigator.sln --no-build --configuration Release --verbosity normal > tests.txt 2>&1
         status=$?
-        tr -d '\r' < tests.txt | tail -c 60000 | tr '\n' '\t' > tests.flat
-        echo "::error::$(cat tests.flat)"
+        # Annotations are capped per message, so publish only the failure blocks,
+        # folded into chunks that each fit.
+        grep -E 'FAIL|Failed|Error Message|Assert|Expected|Actual|Stack Trace' tests.txt \
+          | fold -w 3900 | tail -n 8 > failures.txt
+        if [ ! -s failures.txt ]; then tail -c 3900 tests.txt | fold -w 3900 | tail -n 1 > failures.txt; fi
+        while IFS= read -r chunk; do echo "::error::$chunk"; done < failures.txt
         exit $status
 
   # Encouraged React Web Application Pipeline
