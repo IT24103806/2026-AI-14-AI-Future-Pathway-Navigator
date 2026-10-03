@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using PathwayNavigator.Api.Data;
 using PathwayNavigator.Api.DTOs.Consultation;
+using PathwayNavigator.Api.DTOs.Notification;
 using PathwayNavigator.Api.Models;
 using PathwayNavigator.Api.Services;
 using Xunit;
