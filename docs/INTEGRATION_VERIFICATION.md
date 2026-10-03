@@ -27,6 +27,14 @@ FastAPI AI service (ai_service, :8000)  ── Agents 1-4 (LangGraph)
 | `POST /counsellor-review/{id}/resubmit` (student re-runs Agent 4 after `NeedsRevision`/`Rejected`/`Approved`; creates a new review row, blocked while `Pending`) | `CounsellorReviewController.ResubmitRealityCheck` | `POST /api/v1/agent-4/evaluate` |
 | `GET /counsellor-review/me/status`, `/me/history` | `CounsellorReviewController` (Student) | – |
 | `GET /counsellor-review`, `GET /{id}`, `POST /{id}/decision` | `CounsellorReviewController` (Counsellor/Admin) | – |
+| **Consultant channel (student)** — `POST /consultations`, `GET /consultations/me`, `GET /consultations/{id}`, `POST /{id}/messages`, `POST /{id}/close`, `POST /{id}/reopen`, `GET /consultations/context/{contextType}/{refId}`, `GET /consultations/faq-match` | `ConsultationController` (Student) | `POST /api/v1/agent-5/faq-match` (only for the FAQ suggestions) |
+| **Consultant channel (desk)** — `GET /consultant/queue`, `GET /consultant/queue/{id}`, `POST /consultant/queue/{id}/claim|release|reply|note|priority|escalate|draft`, `GET /consultant/queue/{id}/brief`, `GET /consultant/me/stats`, `GET /consultant/me/profile`, `PUT /consultant/me/profile`, `GET /consultant/students/{consultationId}/context` | `ConsultantController` (Consultant/Admin) | `POST /api/v1/agent-5/brief`, `POST /api/v1/agent-5/draft-reply`, `POST /api/v1/agent-5/triage` |
+| **Notifications** — `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | `NotificationController` | – |
+| **Admin consultant management** — `GET` + `POST /admin/consultants`, `PUT /admin/consultants/{userId}`, `POST /admin/consultants/cases/{consultationId}/reassign/{consultantUserId}`, `GET /admin/consultation-metrics` | `AdminConsultantController` (Admin) | – |
+
+The `Consultant` role is seeded (`10000000-0000-0000-0000-000000000004`). A consultant can never see or
+decide the counsellor approval queue, and students never receive the Agent 5 triage payload, internal
+notes, `StudentEvidenceJson`, or another student's data.
 
 ## Profile update loop ("Re-run AI onboarding")
 
@@ -75,6 +83,9 @@ FastAPI AI service (ai_service, :8000)  ── Agents 1-4 (LangGraph)
 
 ## Known limitations / follow-ups
 
+* The consultation feature could not be built or tested in the coding sandbox (no .NET SDK / NuGet, no Flutter SDK /
+  pub.dev). Run `dotnet build` + `dotnet test` + `dotnet ef database update`, then `flutter analyze` + `flutter test`,
+  before treating Phase 1/4 as verified; the web and AI-service suites were run and are green.
 * Public registration lets the caller pick the `Admin`/`Counsellor` role (`RegisterPage` + `AuthService.RegisterAsync`).
   Restrict this before any real deployment.
 * `Migrations/AppDbContextModelSnapshot.cs` was not regenerated after the Member 4 migrations (they were hand-written),

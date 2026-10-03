@@ -10,7 +10,7 @@ Scope: `mobile/PathwayNavigator`. Companion to `docs/INTEGRATION_VERIFICATION.md
 
 ## 1. Goals
 
-1. Feature parity with the web client for Student, Counsellor and Admin roles.
+1. Feature parity with the web client for Student, Consultant, Counsellor and Admin roles.
 2. One backend contract. The app only calls the ASP.NET API (`/api/...`); the Python agents stay
    internal.
 3. Code that is cheap to change: small feature modules, one place for each concern, tests that run
@@ -36,7 +36,9 @@ core  (ApiClient, AppException, KeyValueStore, validators, JWT helpers, widgets)
   screen's wrapper widget and die with the route.
 * **Navigation:** `go_router`. All access rules live in the pure function `resolveRedirect`
   (`app/router.dart`): *wait for state → consent → authentication → role*. It is unit-tested as a table.
-  Route constants: `core/constants/routes.dart`.
+  Route constants: `core/constants/routes.dart`. The Consultant Desk is its own guarded area
+  (`/consultant`, Consultant/Admin only) and is deliberately separate from the Approval Centre
+  (`/counsellor`), matching ADR-004: consultants guide, counsellors approve.
 * **Errors:** every failure leaves the data layer as `AppException` (kind + user-safe message).
   UI shows `describeError(e)`; unknown exceptions show a generic fallback – never `toString()` of an
   arbitrary object, a stack trace or a server body.
@@ -88,6 +90,30 @@ quality, privacy.)
 Known gaps to close before a public launch: a real privacy-policy URL and data-deletion process,
 rate limiting / lockout on the API, certificate pinning (optional), Play Data-safety form, and an
 accessibility audit with TalkBack.
+
+## 5b. Consultant support channel (`features/support`)
+
+The mobile mirror of the web consultant feature. A question is always anchored to what the student
+was looking at (`contextType` + `contextRefId`), travels through the same async SLA thread, and the
+answer is written back into that same component:
+
+* `data/consultation_models.dart` — `Consultation`, `ConsultationMessage`, `ConsultationGuidance`
+  (parses the `{}` / object / array shapes the backend stores), `AppNotification`, and
+  `notificationRoute()` which maps a stored web deep link onto a mobile route.
+* `data/consultation_repository.dart` — one interface for the student, consultant and notification
+  endpoints; authorisation is enforced server-side, not by client construction.
+* `presentation/support_screen.dart` — "My questions": list, thread, reply, close/reopen, ask sheet.
+* `presentation/consultant_desk_screen.dart` + `widgets/consultant_case_view.dart` — the desk: SLA
+  queue, claim/release/escalate, frozen context, Agent 5 brief and triage evidence, reply composer
+  with guidance/checklist/resources, internal notes.
+* `presentation/notifications_screen.dart` — DB inbox and the unread badge; `NotificationController`
+  polls the indexed unread-count endpoint every 45 s while signed in and stops on sign-out.
+* `widgets/consultant_note.dart` — the payoff: the consultant's guidance rendered inside the Reality
+  Check (and reusable on any other journey component).
+
+Egress rule: Agent 5 content is **assistive only**. The draft is inserted into the visible text field,
+never sent; the consultant presses send, and `usedAgentDraft` records that the reply started from a
+draft.
 
 ## 6. Testing strategy
 
