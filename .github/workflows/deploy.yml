@@ -1,0 +1,230 @@
+name: Build & Deploy
+
+# Push to main == deploy to production. Nothing is ever built on the VPS: it has
+# 949 MiB of RAM, which is not enough to compile .NET or bundle Vite. GitHub
+# runners do all of it and the VPS only pulls finished images.
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+# A second push while a deploy is running must wait, not interleave.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ${{ vars.REGISTRY || 'ghcr.io/menuradev' }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Gate. Mirrors ci.yml for the three services that get deployed. Flutter is
+  #    left to ci.yml -- the mobile app is not part of this deployment.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Backend tests
+        run: dotnet test ./backend/PathwayNavigator.sln --configuration Release --verbosity normal
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'          # vite 8.2.1 requires ^20.19.0 || >=22.12.0
+          cache: npm
+          cache-dependency-path: web/PathwayNavigator/package-lock.json
+
+      - name: Web tests + production build
+        working-directory: ./web/PathwayNavigator
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: AI service tests
+        working-directory: ./ai_service
+        run: |
+          pip install -r requirements.txt
+          pytest -q
+
+  # ---------------------------------------------------------------------------
+  # 2. Build the two runtime images and push them to GHCR.
+  # ---------------------------------------------------------------------------
+  images:
+    name: Image (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: pn-api
+            context: ./backend
+            dockerfile: backend/Dockerfile
+          - service: pn-ai-service
+            context: ./ai_service
+            dockerfile: ai_service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  # ---------------------------------------------------------------------------
+  # 3. Apply EF migrations BEFORE the new code starts serving.
+  #
+  #    Program.cs:165 only migrates when ASPNETCORE_ENVIRONMENT=Development, so
+  #    without this step a fresh production database stays empty.
+  #
+  #    --connection is required: AppDbContextFactory reads only appsettings.json
+  #    (no .AddEnvironmentVariables()), so a ConnectionStrings__DefaultConnection
+  #    environment variable would be silently ignored. --connection overrides the
+  #    factory's connection string, design-time factory included.
+  #
+  #    This requires the database to accept connections from GitHub's runners,
+  #    which is true for Neon / Supabase / Aiven. If you self-host Postgres, set
+  #    the repository variable RUN_MIGRATIONS_IN_CI=false and migrate yourself.
+  # ---------------------------------------------------------------------------
+  migrate:
+    name: Database migrations
+    runs-on: ubuntu-latest
+    needs: test
+    if: vars.RUN_MIGRATIONS_IN_CI != 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install EF Core CLI
+        run: |
+          dotnet tool install --global dotnet-ef --version '8.*'
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Apply migrations to production
+        working-directory: ./backend/PathwayNavigator.Api
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+        run: |
+          if [ -z "$PROD_DB_CONNECTION" ]; then
+            echo "::error::PROD_DB_CONNECTION secret is not set"
+            exit 1
+          fi
+          dotnet ef database update --connection "$PROD_DB_CONNECTION"
+
+      - name: Verify migration history
+        working-directory: ./backend/PathwayNavigator.Api
+        env:
+          PROD_DB_CONNECTION: ${{ secrets.PROD_DB_CONNECTION }}
+        run: dotnet ef migrations list --connection "$PROD_DB_CONNECTION" --no-build
+
+  # ---------------------------------------------------------------------------
+  # 4. Ship. Copy the compose file and Caddyfile, pull the new images, recreate
+  #    only what changed, then drop the images that are no longer referenced.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [ images, migrate ]
+    if: always() && needs.images.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH key
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Copy stack definition
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh "$USER@$HOST" 'mkdir -p /opt/pathway-navigator/deploy'
+          scp docker-compose.yml "$USER@$HOST:/opt/pathway-navigator/docker-compose.yml"
+          scp deploy/Caddyfile   "$USER@$HOST:/opt/pathway-navigator/deploy/Caddyfile"
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          REGISTRY: ${{ env.REGISTRY }}
+          TAG: ${{ github.sha }}
+        run: |
+          ssh "$USER@$HOST" "
+            set -e
+            cd /opt/pathway-navigator
+
+            # Fail loudly rather than starting containers with an empty env file.
+            for f in deploy/pn-api.env deploy/pn-ai.env; do
+              if [ ! -s \"\$f\" ]; then
+                echo \"MISSING: /opt/pathway-navigator/\$f\" >&2
+                exit 1
+              fi
+            done
+
+            printf 'REGISTRY=%s\nIMAGE_TAG=%s\n' '$REGISTRY' '$TAG' > .env
+
+            docker compose pull --quiet
+            docker compose up -d --remove-orphans
+            docker compose ps
+
+            # Reclaim disk on a small box; only removes images no container uses.
+            docker image prune -f
+          "
+
+      - name: Smoke test the API through Caddy
+        env:
+          API_HOST: ${{ vars.API_HOST }}
+        run: |
+          if [ -z "$API_HOST" ]; then
+            echo "API_HOST variable not set -- skipping smoke test"
+            exit 0
+          fi
+          for i in $(seq 1 12); do
+            if curl -fsS "https://$API_HOST/swagger/index.html" > /dev/null; then
+              echo "OK: https://$API_HOST is serving"
+              exit 0
+            fi
+            echo "waiting for $API_HOST (attempt $i/12)..."
+            sleep 5
+          done
+          echo "::error::API did not become healthy at https://$API_HOST"
+          exit 1

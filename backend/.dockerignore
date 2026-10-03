@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/TestResults/
+PathwayNavigator.Tests/
+appsettings.Development.json
+appsettings.json
+Dockerfile
+.dockerignore
