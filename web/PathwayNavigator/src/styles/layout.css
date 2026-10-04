@@ -24,6 +24,33 @@
   animation: fadeInUp var(--dur-slow) var(--ease-out) both;
 }
 
+/* Keyboard users land on this first — it drops in from above the header. */
+.skip-link {
+  position: fixed;
+  top: 0.6rem;
+  left: 50%;
+  z-index: calc(var(--z-toast) + 10);
+  transform: translate(-50%, -220%);
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-brand);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--dur) var(--ease-spring);
+}
+
+.skip-link:focus-visible,
+.skip-link:focus {
+  transform: translate(-50%, 0);
+  color: #fff;
+  outline: 2px solid var(--glass-sheen);
+  outline-offset: 2px;
+}
+
 /* Reads the aurora background through the page edges */
 .page-glow {
   position: absolute;
@@ -54,10 +81,11 @@
 .site-header__inner {
   width: 100%;
   max-width: var(--container-wide);
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: clamp(0.4rem, 1.4vw, 1rem);
   padding: 0.55rem 0.75rem 0.55rem 1rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
@@ -66,6 +94,10 @@
   -webkit-backdrop-filter: blur(20px) saturate(170%);
   box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transition: var(--transition);
+}
+
+.site-header--scrolled {
+  padding-block: 0.45rem;
 }
 
 .site-header--scrolled .site-header__inner {
@@ -87,6 +119,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
   color: var(--text-main);
   font-family: var(--font-display);
   font-weight: 700;
@@ -136,8 +169,13 @@
   box-shadow: 0 12px 26px -14px rgba(91, 140, 255, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.brand-text { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-text strong { font-weight: 750; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.brand-text strong {
+  font-weight: 750;
+  /* When the header gets tight the wordmark softens first — controls never clip. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .brand-text small,
 .brand-title {
   font-size: var(--fs-2xs);
@@ -158,6 +196,15 @@
   display: flex;
   align-items: center;
   gap: 0.15rem;
+  /* The strip stays inside the pill at every width: it shrinks and scrolls
+     instead of pushing the action rail (and its buttons) out of view. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   padding: 0.25rem;
   border-radius: var(--radius-pill);
   background: var(--glass-1);
@@ -166,11 +213,15 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+.site-nav::-webkit-scrollbar { display: none; }
+
 .nav-link {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  flex: 0 0 auto;
+  scroll-snap-align: center;
   padding: 0.5rem 0.9rem;
   border-radius: var(--radius-pill);
   color: var(--text-muted);
@@ -224,20 +275,35 @@
   gap: 0.6rem;
 }
 
+/* The action rail never compresses — its buttons must always stay tappable. */
+.nav-actions {
+  flex: 0 0 auto;
+}
+
+.nav-actions > * {
+  flex: 0 0 auto;
+}
+
 .user-profile-badge {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  min-width: 0;
   padding: 0.35rem 0.55rem 0.35rem 0.85rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
   background: var(--glass-2);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition);
 }
 
+.user-profile-badge:hover { border-color: var(--glass-border-strong); }
+
 .user-email {
-  max-width: 190px;
+  max-width: min(190px, 14vw);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -247,7 +313,7 @@
 }
 
 .user-avatar {
-  display: none;
+  display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
@@ -258,6 +324,17 @@
   font-size: var(--fs-sm);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
+
+/* Identity rail in the drawer: avatar + e-mail/role stacked, full width. */
+.nav-user-section--drawer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.nav-user-section--drawer .user-profile-badge { justify-content: flex-start; padding: 0.55rem 0.8rem; }
+.nav-user-section--drawer .user-email { max-width: 55vw; }
+.drawer-user-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; min-width: 0; }
 
 /* Theme toggle ------------------------------------------------------------- */
 .theme-toggle {
@@ -292,6 +369,7 @@
 }
 
 .theme-toggle:hover { border-color: var(--glass-border-strong); }
+.theme-toggle:active { transform: scale(0.94); }
 
 /* Burger + mobile drawer --------------------------------------------------- */
 .nav-burger {
@@ -303,7 +381,11 @@
   border: 1px solid var(--glass-border);
   background: var(--glass-2);
   color: var(--text-main);
+  transition: var(--transition);
 }
+
+.nav-burger:hover { border-color: var(--glass-border-strong); background: var(--glass-3); }
+.nav-burger:active { transform: scale(0.92); }
 
 .nav-burger__bars {
   position: relative;
@@ -338,7 +420,7 @@
   position: fixed;
   inset: 0 0 auto;
   z-index: var(--z-drawer);
-  padding: calc(var(--nav-height) + 0.6rem) var(--gutter) 1.6rem;
+  padding: calc(var(--nav-height) + 0.6rem) var(--gutter) calc(1.6rem + env(safe-area-inset-bottom, 0px));
   background: var(--drawer-bg);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
@@ -366,7 +448,17 @@
   border-radius: var(--radius-md);
 }
 
+.mobile-drawer .nav-link:hover { background: var(--glass-2); }
 .mobile-drawer .nav-link.active { background: linear-gradient(120deg, rgba(34, 211, 238, 0.16), rgba(91, 140, 255, 0.2)); }
+
+/* Drawer rows cascade in so the panel feels unfolded, not swapped. */
+.mobile-drawer.is-open .mobile-drawer__section,
+.mobile-drawer.is-open .mobile-drawer__footer {
+  animation: floatUpFade var(--dur-slow) var(--ease-out) both;
+}
+
+.mobile-drawer.is-open .mobile-drawer__section:nth-of-type(2) { animation-delay: 70ms; }
+.mobile-drawer.is-open .mobile-drawer__footer { animation-delay: 120ms; }
 
 .mobile-drawer__section {
   display: flex;
@@ -375,9 +467,24 @@
   padding-top: 0.6rem;
   margin-top: 0.4rem;
   border-top: 1px solid var(--divider);
+  width: 100%;
+  max-width: calc(var(--container-wide) - 2rem);
 }
 
-.mobile-drawer__footer { display: flex; flex-wrap: wrap; gap: 0.6rem; padding-top: 1rem; }
+.mobile-drawer__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  width: 100%;
+  max-width: calc(var(--container-wide) - 2rem);
+}
+
+/* On wide viewports the drawer hangs under the floating pill like a sheet,
+   instead of stretching edge-to-edge with sparse rows. */
+.mobile-drawer {
+  align-items: center;
+}
 
 .drawer-scrim {
   position: fixed;
@@ -412,7 +519,7 @@
 .to-top {
   position: fixed;
   right: clamp(1rem, 2.5vw, 2rem);
-  bottom: clamp(1rem, 2.5vw, 2rem);
+  bottom: calc(clamp(1rem, 2.5vw, 2rem) + env(safe-area-inset-bottom, 0px));
   z-index: var(--z-sticky);
   display: grid;
   place-items: center;
@@ -516,33 +623,69 @@
 
 /* ===========================================================================
    Responsive
+   ---------------------------------------------------------------------------
+   The header is one flex row that must never overflow the pill:
+   - the brand wordmark ellipsises first,
+   - the link strip shrinks and scrolls,
+   - the action rail (theme, bell, avatar, logout, auth buttons) never compresses.
+   When inline links no longer fit comfortably they collapse into the glass
+   drawer at a role-aware breakpoint, so nothing is ever cut off or hidden.
    =========================================================================== */
-@media (max-width: 1080px) {
-  /* Below this width the horizontal nav is replaced by the glass drawer. */
-  .site-nav { display: none; }
-  .nav-burger { display: grid; }
-  .nav-search-hint { display: none; }
+
+/* Signed-in journeys carry five long links + identity chip: collapse earlier. */
+@media (max-width: 1300px) {
+  .site-header--auth .site-nav { display: none; }
+  .site-header--auth .nav-burger { display: grid; }
+}
+
+@media (min-width: 1301px) {
+  .site-header--auth .nav-burger { display: none; }
+}
+
+/* Guests only carry three short links: they can keep the inline strip longer. */
+@media (max-width: 1060px) {
+  .site-header--guest .site-nav { display: none; }
+  .site-header--guest .nav-burger { display: grid; }
+}
+
+@media (min-width: 1061px) {
+  .site-header--guest .nav-burger { display: none; }
+}
+
+/* Tight desktop window: trim link and button padding before anything wraps. */
+@media (max-width: 1440px) {
+  .site-header--auth .nav-link {
+    padding: 0.45rem 0.72rem;
+    gap: 0.3rem;
+    font-size: var(--fs-xs);
+  }
+
+  .site-header--guest .btn-nav { padding: 0.5rem 0.9rem; font-size: var(--fs-xs); }
+}
+
+/* Below the “roomy” threshold the header trades text for icons so every
+   control stays visible: e-mail chip out (avatar in), labelled buttons icon-only. */
+@media (max-width: 1499px) {
+  .nav-link--desktop { display: none; }
+}
+
+@media (min-width: 1500px) {
+  .nav-user-section__avatar { display: none; }
+}
+
+@media (max-width: 1560px) {
+  .btn-logout__label { display: none; }
 }
 
 @media (max-width: 900px) {
-
-  .nav-link--desktop,
-  .user-email,
-  .nav-user-section .btn-logout span { display: none; }
-
+  .nav-actions,
   .nav-user-section { gap: 0.45rem; }
-  .user-profile-badge { padding: 0.3rem 0.4rem; }
-  .nav-user-section__avatar { display: grid; }
-
-  .mobile-drawer .user-email { display: inline; }
-  .mobile-drawer .nav-user-section { flex-direction: column; align-items: stretch; }
-  .mobile-drawer .btn-logout { justify-content: center; }
 
   .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .footer-brand { grid-column: 1 / -1; max-width: none; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .site-header { padding: 0.5rem 0.75rem; }
   .app-container .nav-auth-buttons { display: none; }
   .site-header__inner { padding: 0.45rem 0.6rem; border-radius: var(--radius-lg); }
@@ -553,14 +696,15 @@
   .footer-bottom { flex-direction: column; align-items: flex-start; }
 }
 
-@media (min-width: 1081px) {
-  .nav-burger { display: none; }
-}
-
 .footer-note {
   color: var(--text-dim);
   font-size: var(--fs-xs);
   max-width: 60ch;
+}
+
+@media (max-width: 480px) {
+  /* Phone widths: identity lives in the drawer, the header keeps only controls. */
+  .nav-user-section__avatar { display: none; }
 }
 
 @media (max-width: 430px) {
@@ -569,6 +713,9 @@
   .nav-actions { gap: 0.35rem; }
   .theme-toggle { padding: 0.25rem; }
   .theme-toggle__option { width: 26px; height: 26px; font-size: 0.78rem; }
+  .notif-bell__button { width: 36px; height: 36px; font-size: 0.95rem; }
+  .nav-burger { width: 40px; height: 40px; }
+  .btn-logout { min-width: 36px; height: 36px; }
 }
 
 @media (max-width: 360px) {

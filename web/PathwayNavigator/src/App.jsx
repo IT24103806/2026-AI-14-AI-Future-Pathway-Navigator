@@ -34,7 +34,7 @@ function App() {
             <div className="app-container">
               <ScrollProgress />
               <Navbar />
-              <main className="main-content">
+              <main id="main-content" className="main-content">
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/about" element={<AboutPage />} />

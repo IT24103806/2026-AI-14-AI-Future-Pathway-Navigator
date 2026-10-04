@@ -177,6 +177,7 @@
   --z-sticky: 50;
   --z-nav: 100;
   --z-drawer: 200;
+  --z-modal: 260;
   --z-toast: 320;
 }
 
@@ -269,12 +270,13 @@
 }
 
 /* The floating glass header is slightly taller on desktop (larger paddings,
-   theme switch and pill nav) than on small screens — keep the reserved top
-   space in sync so page content never slides underneath it. */
-@media (max-width: 900px) {
-  :root { --nav-height: 80px; }
+   theme switch and pill nav) than in drawer mode or on phones — keep the
+   reserved top space in sync so page content never slides underneath it.
+   1300px is the auth nav collapse point; 640px is the compact mobile chrome. */
+@media (max-width: 1300px) {
+  :root { --nav-height: 86px; }
 }
 
-@media (max-width: 620px) {
-  :root { --nav-height: 74px; }
+@media (max-width: 640px) {
+  :root { --nav-height: 76px; }
 }

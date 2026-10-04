@@ -11,6 +11,25 @@ const initialsFor = (user) => {
   return source.trim().charAt(0).toUpperCase();
 };
 
+/** Compact door-and-arrow logout glyph; inherits currentColor so it works on any glass surface. */
+const LogoutIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="17"
+    height="17"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="m16 17 5-5-5-5" />
+    <path d="M21 12H9" />
+  </svg>
+);
+
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -95,7 +114,19 @@ const Navbar = () => {
 
   return (
     <>
-      <header className={`site-header app-header ${isScrolled ? 'site-header--scrolled' : ''}`}>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <header
+        className={[
+          'site-header',
+          'app-header',
+          isAuthenticated ? 'site-header--auth' : 'site-header--guest',
+          isScrolled ? 'site-header--scrolled' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <div className="site-header__inner">
           <Link to="/" className="navbar-brand brand" aria-label="PathwayNavigator home">
             <BrandMark />
@@ -126,8 +157,15 @@ const Navbar = () => {
                 <span className="user-avatar nav-user-section__avatar" aria-hidden="true">
                   {initialsFor(user)}
                 </span>
-                <button type="button" onClick={handleLogout} className="btn-logout">
-                  ⎋ <span>Logout</span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="btn-logout"
+                  aria-label="Log out"
+                  title="Log out"
+                >
+                  <LogoutIcon />
+                  <span className="btn-logout__label">Log out</span>
                 </button>
               </div>
             ) : (
@@ -166,11 +204,24 @@ const Navbar = () => {
 
         {isAuthenticated && (
           <div className="mobile-drawer__section">
-            <div className="nav-user-section">
-              <span className="user-email">{user?.email}</span>
-              <span className={`role-tag role-${role?.toLowerCase()}`}>{role}</span>
-              <button type="button" onClick={handleLogout} className="btn-logout">
-                ⎋ Logout
+            <div className="nav-user-section nav-user-section--drawer">
+              <Link
+                to={dashboardPathForRole(role)}
+                className="user-profile-badge"
+                title={user?.email}
+                onClick={() => setIsDrawerOpen(false)}
+              >
+                <span className="user-avatar" aria-hidden="true">
+                  {initialsFor(user)}
+                </span>
+                <span className="drawer-user-meta">
+                  <span className="user-email">{user?.email}</span>
+                  <span className={`role-tag role-${role?.toLowerCase()}`}>{role}</span>
+                </span>
+              </Link>
+              <button type="button" onClick={handleLogout} className="btn-logout btn-logout--block">
+                <LogoutIcon />
+                <span>Log out</span>
               </button>
             </div>
           </div>
