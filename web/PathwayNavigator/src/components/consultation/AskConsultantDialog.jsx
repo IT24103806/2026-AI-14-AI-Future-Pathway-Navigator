@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import consultationApi from '../../api/consultationApi';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Context-aware request dialog used from every journey anchor (pathway card, roadmap milestone,
@@ -27,6 +30,59 @@ const AskConsultantDialog = ({
   const [existing, setExisting] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const cardRef = useRef(null);
+  const subjectRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  /**
+   * Opening the dialog means "I want to type my question": the first input is
+   * focused (and the card scrolls it into view on short/mobile screens), the
+   * page behind is locked, Tab stays inside the card, Escape closes and the
+   * trigger button gets focus back.
+   */
+  useEffect(() => {
+    const opener = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const focusTimer = window.setTimeout(() => {
+      const input = subjectRef.current;
+      if (!input) return;
+      input.focus();
+      input.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    }, 60);
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const card = cardRef.current;
+      if (!card) return;
+      const focusables = Array.from(card.querySelectorAll(FOCUSABLE_SELECTOR));
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      if (opener && typeof opener.focus === 'function') opener.focus();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,11 +132,11 @@ const AskConsultantDialog = ({
   };
 
   return (
-    <div className="consult-modal" role="dialog" aria-modal="true" aria-label="Ask a consultant">
-      <div className="consult-modal__card">
+    <div className="consult-modal" role="dialog" aria-modal="true" aria-labelledby="consult-title">
+      <div className="consult-modal__card" ref={cardRef}>
         <header className="consult-modal__head">
           <div>
-            <h2>🙋 Ask a consultant</h2>
+            <h2 id="consult-title">🙋 Ask a consultant</h2>
             <p>
               A real consultant answers here.
               {contextLabel ? <span className="consult-modal__context"> · about: {contextLabel}</span> : null}
@@ -115,6 +171,8 @@ const AskConsultantDialog = ({
           <label htmlFor="consult-subject">Your question in one line</label>
           <input
             id="consult-subject"
+            ref={subjectRef}
+            autoComplete="off"
             value={subject}
             maxLength={140}
             onChange={(event) => setSubject(event.target.value)}

@@ -17,6 +17,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  /* Anchor targets and scrollIntoView() land below the floating header
+     instead of being hidden behind it. */
+  scroll-padding-top: calc(var(--nav-height) + 1rem);
 }
 
 body {
@@ -409,4 +412,9 @@ ol { padding-left: 1.15rem; }
   }
 
   .reveal { opacity: 1; transform: none; }
+
+  .mobile-drawer.is-open .mobile-drawer__section,
+  .mobile-drawer.is-open .mobile-drawer__footer { animation: none; }
+
+  .hero-showcase__top .live-chip__dot { animation: none; }
 }
