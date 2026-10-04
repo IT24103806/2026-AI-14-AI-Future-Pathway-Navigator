@@ -71,7 +71,6 @@ public partial class AddConsultationSupport : Migration
                 AgentDraftUsed = table.Column<bool>(type: "boolean", nullable: false),
                 StudentRating = table.Column<int>(type: "integer", nullable: true),
                 StudentFeedback = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                RowVersion = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                 CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                 UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
             },
