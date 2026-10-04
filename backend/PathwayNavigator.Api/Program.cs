@@ -93,9 +93,22 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Register Member 4 Review Service
 builder.Services.AddScoped<ICounsellorReviewService, CounsellorReviewService>();
 
+// Consultant support layer: context snapshots, the student consultation workflow, the consultant desk
+// and the notification spine every workflow publishes into.
+builder.Services.AddScoped<IContextSnapshotResolver, ContextSnapshotResolver>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<INotificationPublisher, DbNotificationPublisher>();
+builder.Services.AddScoped<IConsultationService, ConsultationService>();
+builder.Services.AddScoped<IConsultantQueueService, ConsultantQueueService>();
+builder.Services.AddScoped<IConsultantAccountService, ConsultantAccountService>();
+
 // Keeps a PostgreSQL connection warm so the first request after an idle period is not the one
 // that discovers the server has already closed the pooled connection.
 builder.Services.AddHostedService<DatabaseKeepAliveHostedService>();
+
+// Watches consultation SLA clocks: reminds the assigned consultant, escalates unclaimed P1 cases to
+// Admin, and quietly expires cases the student never returned to.
+builder.Services.AddHostedService<ConsultationSlaHostedService>();
 
 var app = builder.Build();
 
@@ -167,14 +180,32 @@ using (var scope = app.Services.CreateScope())
             // Saves a manual `dotnet ef database update` on a fresh local database; no-op when up to date.
             dbContext.Database.Migrate();
         }
-        if (!dbContext.Roles.Any(r => r.Name == "Student"))
+        // Per-role upsert instead of the previous all-or-nothing check: the old `if (!Roles.Any("Student"))`
+        // guard meant a database created before a new role existed would never receive it. Each missing
+        // role is now seeded on its own, so adding a role (e.g. Consultant) is safe on a live database.
+        var requiredRoles = new[] { "Student", "Counsellor", "Consultant", "Admin" };
+        var existingRoles = dbContext.Roles.Select(r => r.Name).ToList();
+        var missingRoles = requiredRoles.Where(name => !existingRoles.Contains(name)).ToList();
+        if (missingRoles.Count > 0)
         {
-            dbContext.Roles.AddRange(
-                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Student", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Counsellor", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-                new PathwayNavigator.Api.Models.Role { Id = Guid.NewGuid(), Name = "Admin", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
-            );
+            foreach (var roleName in missingRoles)
+            {
+                dbContext.Roles.Add(new PathwayNavigator.Api.Models.Role
+                {
+                    Id = Guid.NewGuid(),
+                    Name = roleName,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
             dbContext.SaveChanges();
+        }
+
+        // Students must never be created as staff by the public register endpoint. If a database was
+        // seeded before this guard existed nothing needs fixing here - the endpoint below is the gate.
+        if (!dbContext.Roles.Any(r => r.Name == "Consultant"))
+        {
+            startupLogger.LogWarning("The Consultant role is still missing after seeding; the consultant desk will be unreachable.");
         }
     }
     catch (Exception ex)

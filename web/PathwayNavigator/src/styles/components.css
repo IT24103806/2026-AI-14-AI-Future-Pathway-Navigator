@@ -389,6 +389,8 @@
   box-shadow: var(--shadow-sm);
 }
 
+.btn-nav:active { transform: translateY(0) scale(0.97); }
+
 .btn-nav-primary {
   background: var(--gradient-brand);
   border-color: rgba(255, 255, 255, 0.24);
@@ -398,23 +400,43 @@
 
 .btn-nav-primary:hover { color: #fff; }
 
+/* Logout — icon-first so it survives every header width; the text label only
+   renders when there is slack (see .btn-logout__label in layout.css). */
 .btn-logout {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 0.72rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--danger-border);
   background: var(--danger-soft);
   color: var(--danger);
   font-weight: 600;
   font-size: var(--fs-sm);
+  line-height: 1;
   transition: var(--transition);
 }
 
+.btn-logout svg { flex: 0 0 auto; }
+
 .btn-logout:hover {
   background: rgba(244, 63, 94, 0.24);
+  border-color: var(--danger);
   transform: translateY(-1px);
+  box-shadow: 0 10px 22px -14px rgba(244, 63, 94, 0.7);
+}
+
+.btn-logout:active { transform: translateY(0) scale(0.95); }
+
+/* Full-width row inside the mobile drawer. */
+.btn-logout--block {
+  width: 100%;
+  height: 46px;
+  padding: 0 1rem;
+  font-size: var(--fs-md);
 }
 
 /* Small in-card buttons ---------------------------------------------------- */
@@ -663,14 +685,15 @@ textarea.form-input:focus {
 /* OTP ---------------------------------------------------------------------- */
 .otp-container {
   display: flex;
-  gap: 0.55rem;
+  gap: clamp(0.3rem, 1.6vw, 0.55rem);
   justify-content: center;
   margin-block: 0.5rem 0.25rem;
 }
 
 .otp-box {
-  width: 52px;
-  height: 60px;
+  /* Fluid so six digits always fit, even on a 320px phone. */
+  width: clamp(38px, 11vw, 52px);
+  height: clamp(46px, 13vw, 60px);
   text-align: center;
   font-family: var(--font-display);
   font-size: 1.35rem;

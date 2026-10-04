@@ -113,12 +113,19 @@ React helpers:
 
 | Breakpoint | Behaviour |
 | --- | --- |
-| `≥ 1081px` | Full desktop nav, 2-column hero/contact/auth layouts, 3–4 column grids |
-| `≤ 1080px` | Nav collapses into the drawer; hero/auth/contact stack to one column |
-| `≤ 900px` | User e-mail hidden, avatar shown, drawer links become full-width |
+| `≥ 1561px` | Full desktop nav incl. e-mail chip + labelled Logout; 2-column hero/auth layouts |
+| `≤ 1560px` | Logout becomes an icon-only button (label returns only with room to spare) |
+| `≤ 1499px` | E-mail chip collapses to the avatar; identity details live in the drawer |
+| `≤ 1440px` | Nav links and guest auth buttons switch to compact padding |
+| `≤ 1300px` (signed-in) | Role nav collapses into the glass drawer; burger appears; `--nav-height` 86px |
+| `≤ 1060px` (guest) | Public links collapse into the drawer; burger appears |
 | `≤ 760px` | Bento cards go full width, workflow track becomes 2 columns, dashboards stack |
-| `≤ 620px` | Compact header/theme switch, single-column footers, mobile OTP sizing |
+| `≤ 640px` | Compact header/theme switch, guest auth buttons move into the drawer, single-column footers, `--nav-height` 76px |
 | `≤ 430px` | Header controls shrink; brand text hides below 360px |
+
+The header never clips: the brand wordmark ellipsises first, the inline link
+strip scrolls in place, and the action rail (theme, bell, avatar, logout,
+auth buttons) is `flex-shrink: 0`, so no control is ever cut off at any width.
 
 Grids use `repeat(auto-fit, minmax(…, 1fr))` wherever possible so new breakpoints
 rarely need to be added by hand.

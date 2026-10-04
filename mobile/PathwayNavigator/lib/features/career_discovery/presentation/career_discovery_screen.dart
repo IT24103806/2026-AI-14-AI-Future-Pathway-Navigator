@@ -8,6 +8,8 @@ import '../../profile/data/profile_repository.dart';
 import '../../reality_check/data/review_repository.dart';
 import '../../reality_check/presentation/reality_check_form.dart';
 import '../../reality_check/presentation/reality_check_prefill_controller.dart';
+import '../../support/presentation/widgets/ask_consultant_sheet.dart';
+import '../../support/presentation/widgets/consultant_note.dart';
 import '../data/career_models.dart';
 import '../data/career_repository.dart';
 import 'career_controller.dart';
@@ -269,9 +271,28 @@ class _PlanView extends StatelessWidget {
                   Text(step.outcome),
                   if (step.actions.isNotEmpty) Text(step.actions.join(' ')),
                   Text('Estimated: ${step.estimatedDuration}', style: Theme.of(context).textTheme.bodySmall),
+                  // Guidance answered for this exact milestone is attached to it, not buried in an inbox.
+                  ConsultantNote(
+                    guidance: plan.consultantGuidanceJson,
+                    stageKey: step.stage,
+                    title: 'Consultant note for this step',
+                  ),
                 ],
               ),
             ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => showAskConsultantSheet(
+              context,
+              contextType: 'PathwayPlan',
+              contextRefId: plan.id,
+              contextLabel: '${plan.selectedPathway} roadmap',
+              prefillSubject: 'Question about my ${plan.selectedPathway} roadmap',
+              prefillBody: 'I am stuck on this roadmap step and would like a guide on what to do next.',
+            ),
+            icon: const Icon(Icons.support_agent_outlined),
+            label: const Text('Ask a consultant about this roadmap'),
+          ),
         ],
       ),
     );

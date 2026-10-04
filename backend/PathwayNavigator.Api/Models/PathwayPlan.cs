@@ -26,6 +26,14 @@ namespace PathwayNavigator.Api.Models
 
         public string NextAction { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Consultant guidance attached to this roadmap. Serialized <c>List&lt;RoadmapGuidanceItem&gt;</c>:
+        /// { stageKey, consultationId, consultantName, note, resources[], checklist[], createdAt }.
+        /// Rendered as a "Consultant-recommended" resource on the matching milestone so an answer
+        /// is never stranded in a separate inbox.
+        /// </summary>
+        public string ConsultantGuidanceJson { get; set; } = "[]";
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

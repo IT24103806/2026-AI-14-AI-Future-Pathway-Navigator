@@ -6,6 +6,7 @@ from agent_1_conversation.router import router as agent_1_router
 from agent_2_pathway_analysis.router import router as agent_2_router
 from agent_3_pathway_planner.router import router as agent_3_router
 from agent_4_reality_check.router import router as agent_4_router
+from agent_5_consultant_copilot.router import router as agent_5_router
 
 
 app = FastAPI(
@@ -32,6 +33,9 @@ app.include_router(agent_3_router, prefix=settings.API_V1_STR)
 
 
 app.include_router(agent_4_router, prefix=settings.API_V1_STR)
+
+# Include Agent 5 Router (Consultant Copilot)
+app.include_router(agent_5_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     return {

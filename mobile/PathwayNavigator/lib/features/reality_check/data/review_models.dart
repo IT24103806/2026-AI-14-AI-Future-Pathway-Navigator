@@ -62,6 +62,7 @@ class PathwayReview {
     required this.executionTrace,
     required this.agentError,
     required this.counsellorFeedback,
+    this.consultantAdviceJson = '{}',
     required this.createdAt,
     required this.reviewedAt,
   });
@@ -91,6 +92,9 @@ class PathwayReview {
   final List<AuditEntry> executionTrace;
   final String? agentError;
   final String? counsellorFeedback;
+
+  /// Guidance a consultant wrote back specifically for this review (empty `{}` when none).
+  final String consultantAdviceJson;
   final DateTime createdAt;
   final DateTime? reviewedAt;
 
@@ -124,6 +128,7 @@ class PathwayReview {
         executionTrace: asMapList(json['executionTraceJson']).map(AuditEntry.fromJson).toList(),
         agentError: asNullableString(json['agentError']),
         counsellorFeedback: asNullableString(json['counsellorFeedback']),
+        consultantAdviceJson: asString(json['consultantAdviceJson'], '{}'),
         createdAt: asDate(json['createdAt']),
         reviewedAt: asNullableDate(json['reviewedAt']),
       );

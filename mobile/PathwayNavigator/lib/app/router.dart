@@ -17,6 +17,9 @@ import '../features/privacy/presentation/consent_screen.dart';
 import '../features/reality_check/presentation/counsellor_queue_screen.dart';
 import '../features/reality_check/presentation/counsellor_review_screen.dart';
 import '../features/reality_check/presentation/student_reality_screen.dart';
+import '../features/support/presentation/consultant_desk_screen.dart';
+import '../features/support/presentation/notifications_screen.dart';
+import '../features/support/presentation/support_screen.dart';
 
 /// Pure routing policy (no Flutter dependency, unit-tested): returns the location the user must
 /// be sent to, or null to stay where they are.
@@ -51,6 +54,8 @@ String? resolveRedirect({
   if (isPublic || isGate) return home;
 
   if (_isUnder(location, AppRoutes.student) && role != Roles.student) return home;
+  // The Consultant Desk is its own desk: consultants answer questions, they never approve a pathway.
+  if (_isUnder(location, AppRoutes.consultant) && !Roles.canAccessConsultantDesk(role)) return home;
   if (_isUnder(location, AppRoutes.counsellor) && !Roles.isStaff(role)) return home;
   if (_isUnder(location, AppRoutes.admin) && role != Roles.admin) return home;
   return null;
@@ -97,6 +102,15 @@ GoRouter buildRouter({
       GoRoute(path: AppRoutes.onboarding, builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: AppRoutes.careerDiscovery, builder: (_, _) => const CareerDiscoveryScreen()),
       GoRoute(path: AppRoutes.realityCheck, builder: (_, _) => const StudentRealityScreen()),
+      GoRoute(
+        path: AppRoutes.support,
+        builder: (_, state) => SupportScreen(initialConsultationId: state.uri.queryParameters['consultation']),
+      ),
+      GoRoute(
+        path: AppRoutes.consultant,
+        builder: (_, state) => ConsultantDeskScreen(initialCaseId: state.uri.queryParameters['consultation']),
+      ),
+      GoRoute(path: AppRoutes.notifications, builder: (_, _) => const NotificationsScreen()),
       GoRoute(path: AppRoutes.counsellor, builder: (_, _) => const CounsellorQueueScreen()),
       GoRoute(
         path: '${AppRoutes.counsellor}/review/:id',

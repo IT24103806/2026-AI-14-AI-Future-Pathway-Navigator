@@ -5,6 +5,10 @@ import { getStudentProfileApi } from '../api/profileApi';
 import { getLatestPathwayAnalysisApi } from '../api/pathwayApi';
 import { getApiErrorMessage } from '../utils/apiError';
 import JourneySteps from '../components/common/JourneySteps';
+import AskConsultantDialog from '../components/consultation/AskConsultantDialog';
+import ConsultationThread from '../components/consultation/ConsultationThread';
+import ConsultantNote from '../components/consultation/ConsultantNote';
+import consultationApi from '../api/consultationApi';
 
 const parseList = (value) => {
   if (Array.isArray(value)) return value;
@@ -30,6 +34,10 @@ const statusCopy = {
 
 export default function StudentRealityCheckPage() {
   const [status, setStatus] = useState(null);
+  // Consultant channel: which anchor the student is asking from, the deep-linked thread, and notices.
+  const [askContext, setAskContext] = useState(null);
+  const [focusedConsultation, setFocusedConsultation] = useState(null);
+  const [consultationNotice, setConsultationNotice] = useState('');
   const [history, setHistory] = useState([]);
   const [careerOptions, setCareerOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +115,16 @@ export default function StudentRealityCheckPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Notification deep link (`?consultation=<id>`): the consultant's answer opens over this page, so the
+  // student can read it in the context of the review they were stuck on.
+  useEffect(() => {
+    const consultationId = new URLSearchParams(window.location.search).get('consultation');
+    if (!consultationId) return;
+    consultationApi.getById(consultationId)
+      .then(setFocusedConsultation)
+      .catch(() => setConsultationNotice(''));
+  }, []);
 
   const handleQuickAddSkill = (skillToAdd) => {
     const existing = revisionInput.currentSkills
@@ -226,6 +244,21 @@ export default function StudentRealityCheckPage() {
           <JourneySteps current={3} className="mt-2" />
         </div>
         <div className="student-reality-header-actions">
+          <button
+            type="button"
+            className="ask-consultant-trigger"
+            onClick={() => setAskContext({
+              contextType: 'RealityCheck',
+              contextRefId: status.id,
+              contextLabel: `${status.targetCareer} · ${status.status}`,
+              prefillSubject: `Question about my ${status.targetCareer} Reality Check`,
+              prefillBody: status.status === 'NeedsRevision' || status.status === 'Rejected'
+                ? `I do not understand the feedback on my Reality Check: "${status.counsellorFeedback ?? ''}". Can you explain what I need to change?`
+                : `I would like to understand my Reality Check result (${status.status}, feasibility ${status.feasibilityScore}%). Can you explain what it means for me?`,
+            })}
+          >
+            🙋 Ask a consultant about this review
+          </button>
           {canResubmit && !showRevisionForm && (
             <button
               type="button"
@@ -350,7 +383,38 @@ export default function StudentRealityCheckPage() {
               ? 'Waiting for an authorized counsellor decision.'
               : 'No feedback was provided.')}
         </p>
+        {/* Answers from a consultant are written back onto the review and shown right here. */}
+        <ConsultantNote guidance={status.consultantAdviceJson} title="Consultant help with this review" />
       </section>
+
+      {focusedConsultation && (
+        <div className="consult-modal" role="dialog" aria-modal="true" aria-label="Consultant conversation">
+          <div className="consult-modal__card">
+            <header className="consult-modal__head">
+              <div>
+                <h2>🤝 Your consultant conversation</h2>
+                <p>Reply here and keep working through your pathway.</p>
+              </div>
+              <button type="button" className="consult-modal__close" onClick={() => setFocusedConsultation(null)} aria-label="Close">✕</button>
+            </header>
+            <ConsultationThread
+              consultation={focusedConsultation}
+              variant="student"
+              onSend={async (body) => {
+                try {
+                  setFocusedConsultation(await consultationApi.addMessage(focusedConsultation.id, body));
+                  return true;
+                } catch {
+                  setConsultationNotice('Your message could not be sent.');
+                  return false;
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {consultationNotice && <p className="review-alert success" role="status">{consultationNotice}</p>}
 
       {canResubmit && showRevisionForm && (
         <section className="reality-panel revision-loop-panel" aria-label="Revise and resubmit Reality Check">
@@ -503,6 +567,21 @@ export default function StudentRealityCheckPage() {
           </div>
         )}
       </section>
+
+      {askContext && (
+        <AskConsultantDialog
+          contextType={askContext.contextType}
+          contextRefId={askContext.contextRefId}
+          contextLabel={askContext.contextLabel}
+          prefillSubject={askContext.prefillSubject}
+          prefillBody={askContext.prefillBody}
+          onClose={() => setAskContext(null)}
+          onCreated={(created) => {
+            setConsultationNotice('Sent. A consultant will reply — you will get a notification.');
+            setFocusedConsultation(created);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,82 @@
+# Production stack for the AlmaLinux VPS.
+#
+# This file is copied to /opt/pathway-navigator/ by the deploy pipeline; it is not
+# meant to be run from a working copy. Two things are deliberately absent:
+#
+#   * No PostgreSQL service. The box has 949 MiB of RAM in total; Postgres belongs
+#     on a managed free tier (Neon / Supabase / Aiven). The API already carries
+#     pool-recycling and transient-retry logic written for exactly those providers
+#     (backend/PathwayNavigator.Api/Data/DatabaseConfiguration.cs).
+#   * No web service. The React SPA is built and served by Cloudflare Pages, so the
+#     VPS never runs a Node build.
+#
+# Only `caddy` publishes ports. `api` and `ai` are reachable on the internal
+# network by service name, and the Python service is never reachable from outside
+# the host at all.
+#
+# Images are pulled from GHCR by the pipeline; nothing is built on this machine.
+
+name: pathway-navigator
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      # :Z relabels the file for SELinux, which is enforcing on AlmaLinux 10.
+      # Without it Caddy starts and then fails to read its own config.
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - pn
+    depends_on:
+      - api
+    mem_limit: 96m
+    logging: &pn-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    image: ${REGISTRY:-ghcr.io/menuradev}/pn-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./deploy/pn-api.env
+    networks:
+      - pn
+    # No `ports:` on purpose -- Caddy is the only way in.
+    expose:
+      - "8080"
+    mem_limit: 320m
+    depends_on:
+      ai:
+        condition: service_healthy
+    logging: *pn-logging
+
+  ai:
+    image: ${REGISTRY:-ghcr.io/menuradev}/pn-ai-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./deploy/pn-ai.env
+    networks:
+      - pn
+    expose:
+      - "8000"
+    # LangChain + LangGraph imports are the heaviest thing on this box. 400 MiB is
+    # generous for a FastAPI worker and still leaves room for the API and Caddy.
+    mem_limit: 400m
+    logging: *pn-logging
+
+networks:
+  pn:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
