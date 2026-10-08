@@ -9,25 +9,40 @@ from .schemas import PlannerRequest, PlannerResponse, RoadmapStage
 from .state import PlannerState
 
 
+def _normalize_skill(value: str) -> str:
+    return value.strip().casefold()
+
+
 def _find_pathway(name: str) -> dict | None:
     normalized = name.strip().casefold()
     return next((pathway for pathway in CAREER_PATHWAYS if pathway["pathway_name"].casefold() == normalized), None)
 
 
+def _safe_course(courses: list[str], index: int, fallback: str) -> str:
+    if index < len(courses):
+        course = str(courses[index]).strip()
+        if course:
+            return course
+    return fallback
+
+
 def _build_stages(pathway: dict, profile: PlannerRequest, missing_skills: list[str]) -> list[RoadmapStage]:
-    courses = pathway["recommended_courses"]
+    courses = [str(course).strip() for course in pathway.get("recommended_courses", []) if str(course).strip()]
     completed = {phase.casefold() for phase in profile.completed_phases}
+    primary_course = _safe_course(courses, 0, "a relevant technical course")
+    second_course = _safe_course(courses, 1, "a portfolio-based certification")
+    advanced_course = _safe_course(courses, 2, "an advanced qualification")
     stages = [
         ("education", "Build the education foundation", [
             f"Compare accredited degree, diploma, and foundation options for {pathway['pathway_name']}.",
             "Confirm entry requirements, duration, and total cost before enrolling.",
         ], "3-4 years"),
         ("skills", "Close the core skill gaps", [
-            f"Study {courses[0]}.",
+            f"Study {primary_course}.",
             f"Practice through two portfolio projects related to {pathway['description'].lower()}",
         ], "3-6 months"),
         ("certification", "Add evidence of readiness", [
-            f"Complete {courses[1]}.",
+            f"Complete {second_course}.",
             "Publish project evidence and document the tools used.",
         ], "3-6 months"),
         ("internship", "Get supervised industry experience", [
@@ -39,7 +54,7 @@ def _build_stages(pathway: dict, profile: PlannerRequest, missing_skills: list[s
             "Tailor your CV to demonstrated skills instead of listing only course names.",
         ], "1-3 months"),
         ("long_term_growth", "Plan the next career level", [
-            f"Progress to {courses[2]} or an equivalent advanced qualification.",
+            f"Progress to {advanced_course} or an equivalent advanced qualification.",
             "Review market demand and update the roadmap every six months.",
         ], "1-2 years"),
     ]
@@ -67,8 +82,17 @@ def validate_node(state: Dict[str, Any]) -> Dict[str, Any]:
 def build_roadmap_node(state: Dict[str, Any]) -> Dict[str, Any]:
     pathway = state["pathway"]
     request = state["request"]
-    student_skills = {skill.strip().casefold() for skill in request.profile.core_skills}
-    missing_skills = sorted(skill for skill in pathway["required_skills"] if skill.casefold() not in student_skills)
+    student_skills = {_normalize_skill(skill) for skill in request.profile.core_skills}
+    required_skill_map = {}
+    for skill in pathway["required_skills"]:
+        normalized = _normalize_skill(skill)
+        required_skill_map.setdefault(normalized, skill.strip())
+
+    missing_skills = sorted(
+        required_skill_map[skill]
+        for skill in sorted(required_skill_map)
+        if skill not in student_skills
+    )
     roadmap = _build_stages(pathway, request, missing_skills)
     next_stage = next((step for step in roadmap if step.status != "completed"), roadmap[-1])
     return {"roadmap": roadmap, "missing_skills": missing_skills, "next_action": next_stage.actions[0]}
